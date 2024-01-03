@@ -1,7 +1,7 @@
 import random
 from copy import deepcopy
 import networkx as nx
-from helper_functions import *
+from fitch_graph_praktikum.util.helper_functions import *
 
 def graph_to_rel(graph: nx.DiGraph):
     nodes = list(graph.nodes())
