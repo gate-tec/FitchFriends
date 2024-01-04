@@ -1,7 +1,8 @@
 from fitch_graph_praktikum.nicolas.functions_partial_tuple import get_reduced_relations
 from fitch_graph_praktikum.nicolas.graph_io import load_relations
 from fitch_graph_praktikum.nicolas.tree_functions import create_tree, construct_random_cograph
-from fitch_graph_praktikum.util.lib import cotree_to_rel, rel_to_fitch, check_fitch_graph, graph_to_rel
+from fitch_graph_praktikum.util.helper_functions import NoSatRelation, NotFitchSatError
+from fitch_graph_praktikum.util.lib import cotree_to_rel, rel_to_fitch, graph_to_rel, algorithm_one, check_fitch_graph
 
 import networkx as nx
 
@@ -40,7 +41,7 @@ def get_stored_cograph_relations(
         - the stored cograph
         - the corresponding relations
         - a dictionary mapping each information loss (10, 20, ..., 90) to the respective relations
-        - whether the cograph is Fitch.
+        - whether the corresponding relations are Fitch-SAT.
 
     Raises
     ------
@@ -54,7 +55,13 @@ def get_stored_cograph_relations(
 
     reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
 
-    return cograph, rels, reduced_rels, check_fitch_graph(cograph)
+    return cograph, rels, reduced_rels, True
+
+
+@Exception
+class AlgorithmOneError:
+    """Raised when sanity check of algorithm 1 fails."""
+    pass
 
 
 def get_random_cograph_relations(
@@ -79,7 +86,12 @@ def get_random_cograph_relations(
         - the resulting cograph
         - the corresponding relations
         - a dictionary mapping each information loss (10, 20, ..., 90) to the respective relations
-        - whether the cograph is Fitch.
+        - whether the corresponding relations are Fitch-SAT.
+
+    Raises
+    ------
+    AlgorithmOneError
+        if sanity check of Algorithm 1 fails.
     """
     nodes = list(range(num_nodes))
 
@@ -94,4 +106,14 @@ def get_random_cograph_relations(
 
     reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
 
-    return cograph, rels, reduced_rels, check_fitch_graph(cograph)
+    try:
+        fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
+
+        fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
+        if not check_fitch_graph(fitch_graph):
+            raise AlgorithmOneError
+        fitch_sat = True
+    except (NoSatRelation, NotFitchSatError):
+        fitch_sat = False
+
+    return cograph, rels, reduced_rels, fitch_sat

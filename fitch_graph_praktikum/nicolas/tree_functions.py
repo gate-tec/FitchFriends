@@ -30,12 +30,12 @@ def convert_to_discriminating_cotree(tree: nx.DiGraph, root=None):
 def create_tree(nodes: List[Any]):
 
     tree = nx.DiGraph()
-    _create_sub_tree(tree, nodes, 0, None, None)
+    _create_sub_tree(tree, nodes, 0, None, None, options=['e', 'b', 'u'])
 
     return tree
 
 
-def _create_sub_tree(tree, partition, next_idx, parent_idx, parent_option):
+def _create_sub_tree(tree, partition, next_idx, parent_idx, parent_option, options: list):
     if len(partition) == 1:
         tree.add_node(next_idx, symbol=partition[0])
         tree.add_edge(parent_idx, next_idx)
@@ -47,17 +47,31 @@ def _create_sub_tree(tree, partition, next_idx, parent_idx, parent_option):
         sub_partition2 = partition[half:]
 
         # add parent node with random option
-        option = random.sample(['e', 'b', 'u'], 1)[0]
+        option = random.sample(options, 1)[0]
         if parent_option is None or parent_option != option:
             tree.add_node(next_idx, symbol=option)
             if parent_idx is not None:
                 tree.add_edge(parent_idx, next_idx)
             reference_idx = next_idx
+
+            if option == 'e':
+                sub_options1 = ['e']
+                sub_options2 = ['e']
+            elif option == 'u':
+                sub_options1 = [x for x in options if x in ['e', 'u']]
+                sub_options2 = options
+            else:
+                sub_options1 = options
+                sub_options2 = options
+
         else:
             reference_idx = parent_idx
 
-        last_idx = _create_sub_tree(tree, sub_partition1, next_idx + 1, reference_idx, option)
-        last_idx = _create_sub_tree(tree, sub_partition2, last_idx + 1, reference_idx, option)
+            sub_options1 = options
+            sub_options2 = options
+
+        last_idx = _create_sub_tree(tree, sub_partition1, next_idx + 1, reference_idx, option, options=sub_options1)
+        last_idx = _create_sub_tree(tree, sub_partition2, last_idx + 1, reference_idx, option, options=sub_options2)
         return last_idx
 
 
