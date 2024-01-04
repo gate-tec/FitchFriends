@@ -42,7 +42,7 @@ def _create_sub_tree(tree, partition, next_idx, parent_idx, parent_option, optio
         return next_idx
     else:
         # half the partition set
-        half = math.ceil(len(partition) / 2.0)
+        half = random.choice(list(range(1, len(partition))))
         sub_partition1 = partition[:half]
         sub_partition2 = partition[half:]
 
