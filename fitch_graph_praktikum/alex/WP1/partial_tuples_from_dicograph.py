@@ -15,5 +15,6 @@ def random_dicograph_to_partialtuple(nodes, loss):
 
 if __name__ == '__main__':
     number_of_nodes = 20
-    loss = (0.5)
+
+    loss = (0.4)
     print(random_dicograph_to_partialtuple(number_of_nodes, loss))
