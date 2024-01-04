@@ -10,25 +10,33 @@ def create_partial_tuples(relation_dict, loss):
     # loss should be a number from 0,1 to 0,9 in 0,1 steps. I.e. 0,454 is not allowed, but 0,4 is.
     valid_loss_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     partial_tuples = {0: [], 1: [], 'd': []}
+    filter0 = list(filter(lambda edge: edge[0] < edge[1], relation_dict[0]))
+    filter1 = list(filter(lambda edge: edge[0] < edge[1], relation_dict[1]))
 
+    # since for keys 0 and 1 tuples are presented symmetrically, we only count half of their entries
+    values_before = len(relation_dict[0]) / 2 + len(relation_dict[1]) / 2 + len(relation_dict['d'])
     if loss not in valid_loss_values:
         raise ValueError(
             "The value for loss must be one of those values: 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 or 0.9 !")
-
-    # symmetric edges (0 or 1):
-    for key in (0, 1):
-        for edge in relation_dict[key]:
-            if edge[0] < edge[1]:
-                if random.randint(0, 1) >= loss:
-                    partial_tuples[key].append(edge)
-                    partial_tuples[key].append((edge[1], edge[0]))
-    # asymmetric edges ('d')
-    for edge in relation_dict['d']:
-        if random.randint(0, 1) >= loss:
+    amount_to_keep = int(round(values_before * (1 - loss), 0))
+    to_keep = random.sample(filter0 + filter1 + relations['d'], amount_to_keep)
+    for edge in to_keep:
+        if edge in relation_dict[1]:
+            partial_tuples[1].append(edge)
+            partial_tuples[1].append((edge[1], edge[0]))
+        if edge in relation_dict[0]:
+            partial_tuples[0].append(edge)
+            partial_tuples[0].append((edge[1], edge[0]))
+        else:
             partial_tuples['d'].append(edge)
 
-    return partial_tuples
+    values_after = len(partial_tuples[0]) / 2 + len(partial_tuples[1]) / 2 + len(partial_tuples['d'])
+    information_loss_percent = round((1 - (values_after / values_before))*100)
+    print("by creating partial tuples ", information_loss_percent, "% information have been lost")
+
+    return partial_tuples, information_loss_percent
+
 
 if __name__ == '__main__':
     relations = load_relations(10, 5, 0)
-    print(create_partial_tuples(relations,0.1))
+    print(create_partial_tuples(relations, 0.7))
