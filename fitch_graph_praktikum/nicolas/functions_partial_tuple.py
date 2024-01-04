@@ -1,9 +1,16 @@
 import math
-from typing import Dict, Union, List, Set, Tuple
+from typing import TYPE_CHECKING, Literal, Union, overload
+from fitch_graph_praktikum.util.typing import RelationDictionary
 import random
 
+if TYPE_CHECKING:
+    from typing import Any, Dict, Optional
 
-def delete_information(relations: Dict[Union[int, str], List], percent_delete: int = 10) -> Tuple[Dict[Union[int, str], List], float]:
+
+def delete_information(
+        relations: RelationDictionary,
+        percent_delete: int = 10
+) -> "tuple[RelationDictionary, float]":
     e_0 = set(relations[0])
     e_1 = set(relations[1])
     e_d = set(relations["d"])
@@ -25,5 +32,17 @@ def delete_information(relations: Dict[Union[int, str], List], percent_delete: i
         0: list(sorted(e_0.intersection(total_relations))),
         1: list(sorted(e_1.intersection(total_relations))),
         "d": list(sorted(e_d.intersection(total_relations)))
-    }, len(total_relations) / num_total
+    }, 1 - len(total_relations) / num_total
 
+
+def get_reduced_relations(
+        relations: RelationDictionary,
+        list_percent_delete: list[int]
+) -> "Dict[int, RelationDictionary]":
+    relation_dict = {}
+
+    for percent_delete in list_percent_delete:
+        reduced_relations, _ = delete_information(relations=relations, percent_delete=percent_delete)
+        relation_dict[percent_delete] = reduced_relations
+
+    return relation_dict
