@@ -24,6 +24,12 @@ def create_random_dicograph(n):
                     dicograph.add_edge(node_in_a, nodes_in_b)
                     dicograph.add_edge(nodes_in_b, node_in_a)
 
+        elif operator == 0:
+            for node_in_a in a:
+                for nodes_in_b in b:
+                    dicograph.add_edge(node_in_a, nodes_in_b)
+                    dicograph.add_edge(nodes_in_b, node_in_a)
+
         if operator == 'u':
             for node_in_a in a:
                 for nodes_in_b in b:
