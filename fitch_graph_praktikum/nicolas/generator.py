@@ -109,6 +109,7 @@ def get_random_cograph_relations(
     try:
         fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
 
+        # sanity check if resulting cotree actually explains a fitch graph
         fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
         if not check_fitch_graph(fitch_graph):
             raise AlgorithmOneError
