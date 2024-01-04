@@ -7,6 +7,9 @@ if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 
 
+__all__ = ["delete_information", "get_reduced_relations"]
+
+
 def delete_information(
         relations: RelationDictionary,
         percent_delete: int = 10

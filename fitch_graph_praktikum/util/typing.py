@@ -1,7 +1,10 @@
 from typing import TypedDict
 
 
-RelationDictionary = TypedDict(
+__all__ = ["RelationDictionary"]
+
+
+RelationDictionary: TypedDict = TypedDict(
     'RelationDictionary',
     {0: list, 1: list, 'd': list}
 )

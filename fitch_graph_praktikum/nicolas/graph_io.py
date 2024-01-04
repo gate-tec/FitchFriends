@@ -9,6 +9,10 @@ import pickle as pk
 if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 
+
+__all__ = ["load_relations"]
+
+
 _options = [
     "D0.3_L0.3_H0.9", "D0.5_L0.5_H0.5", "D0.5_L0.5_H0.25", "D0.5_L0.5_H1.0",
     "D0.5_L1.0_H0.25", "D0.25_L0.5_H1.0", "D1.0_L0.5_H0.25"
