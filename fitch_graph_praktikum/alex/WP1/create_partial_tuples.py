@@ -19,7 +19,7 @@ def create_partial_tuples(relation_dict, loss):
         raise ValueError(
             "The value for loss must be one of those values: 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 or 0.9 !")
     amount_to_keep = int(round(values_before * (1 - loss), 0))
-    to_keep = random.sample(filter0 + filter1 + relations['d'], amount_to_keep)
+    to_keep = random.sample(filter0 + filter1 + relation_dict['d'], amount_to_keep)
     for edge in to_keep:
         if edge in relation_dict[1]:
             partial_tuples[1].append(edge)

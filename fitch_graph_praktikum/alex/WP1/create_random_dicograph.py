@@ -3,13 +3,13 @@ import networkx as nx
 import random
 
 
-def create_random_dicograph(l):
+def create_random_dicograph(n):
     # l represents the number of disjoint_nodes within the tree
     operations = [0, 1, 'u']
     disjoint_nodes = []
     dicograph_notation = []
     dicograph = nx.DiGraph()
-    for i in range(0, l):
+    for i in range(0, n):
         dicograph.add_node(i)
         disjoint_nodes.append([i])
     # print(disjoint_nodes)
