@@ -26,7 +26,7 @@ for num_nodes, i in tqdm(
             'Sample': i,
             'Nominal_Loss': nominal_loss,
             'Effective_Loss': effective_loss,
-            'is_Fitch_Sat': is_fitch_sat,
+            'Is_Fitch_Sat': is_fitch_sat,
             'Relations': rels
         })
 
