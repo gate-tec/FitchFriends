@@ -68,7 +68,8 @@ class AlgorithmOneError:
 def get_random_cograph_relations(
         num_nodes: Literal[10, 15, 20, 25, 30],
         top_down: bool = True,
-        do_sanity_check: bool = False
+        do_sanity_check: bool = False,
+        ensure_base_fitch: bool = True
 ) -> "tuple[nx.DiGraph, Dict[int, tuple[RelationDictionary, float, bool]]]":
     """
     Construct random cograph including its reduced sets of relations.
@@ -81,6 +82,9 @@ def get_random_cograph_relations(
         Whether the corresponding cotree should be constructed top-down (default: False).
     do_sanity_check: bool
         Whether the result of the fitch-SAT decision should be double-checked (default: False).
+    ensure_base_fitch: bool
+        Guarantee that the generated base cograph is Fitch (default: True).
+        Automatically sets top_down to True.
 
     Returns
     -------
@@ -97,12 +101,20 @@ def get_random_cograph_relations(
         if sanity check of Algorithm 1 fails (only if `do_sanity_check` is True).
     """
     nodes = list(range(num_nodes))
+    if ensure_base_fitch:
+        # ensure_base_fitch only works for top_down == True
+        top_down = True
 
     if top_down:
-        tree = create_tree(nodes=nodes)
-        rels: RelationDictionary = cotree_to_rel(tree)
+        while True:
+            tree = create_tree(nodes=nodes)
+            rels: RelationDictionary = cotree_to_rel(tree)
 
-        cograph = rel_to_fitch(rels, nodes)
+            cograph = rel_to_fitch(rels, nodes)
+
+            # If ensure_base_fitch == True: loop until graph is Fitch
+            if not ensure_base_fitch or check_fitch_graph(cograph):
+                break
     else:
         cograph = construct_random_cograph(nodes=nodes)
         rels: RelationDictionary = graph_to_rel(cograph)
@@ -113,17 +125,22 @@ def get_random_cograph_relations(
 
     mapped_reduced_rels = {}
     for k, (rels, loss) in reduced_rels.items():
-        try:
-            fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
-
-            if do_sanity_check:
-                # sanity check if resulting cotree actually explains a fitch graph
-                fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
-                if not check_fitch_graph(fitch_graph):
-                    raise AlgorithmOneError
+        if ensure_base_fitch:
+            # if base graph is Fitch, then all relations are Fitch-SAT
             fitch_sat = True
-        except (NoSatRelation, NotFitchSatError):
-            fitch_sat = False
+        else:
+            try:
+                fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
+
+                if do_sanity_check:
+                    # sanity check if resulting cotree actually explains a fitch graph
+                    fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
+                    if not check_fitch_graph(fitch_graph):
+                        raise AlgorithmOneError
+                fitch_sat = True
+            except (NoSatRelation, NotFitchSatError):
+                fitch_sat = False
+
         mapped_reduced_rels[k] = (rels, loss, fitch_sat)
 
     return cograph, mapped_reduced_rels

@@ -71,7 +71,7 @@ def save_dataframe(filename: str, frame: pd.DataFrame, absolute: bool = False):
     if not os.path.exists(dirname(path)):
         os.makedirs(dirname(path))
 
-    frame.to_csv(path, sep='\t', header=True, index=True, index_label=False)
+    frame.to_csv(path, sep='\t', header=True, index=True)
 
 
 def load_dataframe(filename: str, absolute: bool = False):
