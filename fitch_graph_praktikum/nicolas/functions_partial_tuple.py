@@ -1,6 +1,7 @@
 import math
 from typing import TYPE_CHECKING, Literal, Union, overload
 from fitch_graph_praktikum.util.typing import RelationDictionary, WeightedRelationDictionary
+from fitch_graph_praktikum.util.lib import algorithm_two
 import random
 
 if TYPE_CHECKING:
@@ -86,45 +87,68 @@ def convert_to_weighted_relations(
         relations: RelationDictionary,
         nodes: list
 ) -> "WeightedRelationDictionary":
+    """
+    Converts a given partial relation into a weighted relation for `algorithm_two`.
+
+    Parameters
+    ----------
+    relations: RelationDictionary
+        partial tuple of relations.
+    nodes: list
+        List of all nodes.
+
+    Returns
+    -------
+    WeightedRelationDictionary
+        completed tuple of weighted relations.
+
+    See Also
+    --------
+    algorithm_two
+    """
     weights: WeightedRelationDictionary = {0: {}, 1: {}, 'd': {}}
+    
+    weight_contained = 100  # m_0
+    weight_not_contained = -100  # -m_0
+    weight_unknown = 0
 
     for i in range(len(nodes) - 1):
         for j in range(i + 1, len(nodes)):
             node1, node2 = nodes[i], nodes[j]
             if (node1, node2) in relations[0]:
-                weights[0][(node1, node2)] = 100
-                weights[0][(node2, node1)] = 100
-                weights[1][(node1, node2)] = -100
-                weights[1][(node2, node1)] = -100
-                weights['d'][(node1, node2)] = -100
-                weights['d'][(node2, node1)] = -100
+                weights[0][(node1, node2)] = weight_contained
+                weights[0][(node2, node1)] = weight_contained
+                weights[1][(node1, node2)] = weight_not_contained
+                weights[1][(node2, node1)] = weight_not_contained
+                weights['d'][(node1, node2)] = weight_not_contained
+                weights['d'][(node2, node1)] = weight_not_contained
             elif (node1, node2) in relations[1]:
-                weights[0][(node1, node2)] = -100
-                weights[0][(node2, node1)] = -100
-                weights[1][(node1, node2)] = 100
-                weights[1][(node2, node1)] = 100
-                weights['d'][(node1, node2)] = -100
-                weights['d'][(node2, node1)] = -100
+                weights[0][(node1, node2)] = weight_not_contained
+                weights[0][(node2, node1)] = weight_not_contained
+                weights[1][(node1, node2)] = weight_contained
+                weights[1][(node2, node1)] = weight_contained
+                weights['d'][(node1, node2)] = weight_not_contained
+                weights['d'][(node2, node1)] = weight_not_contained
             elif (node1, node2) in relations['d']:
-                weights[0][(node1, node2)] = -100
-                weights[0][(node2, node1)] = -100
-                weights[1][(node1, node2)] = -100
-                weights[1][(node2, node1)] = -100
-                weights['d'][(node1, node2)] = 100
-                weights['d'][(node2, node1)] = -100
+                weights[0][(node1, node2)] = weight_not_contained
+                weights[0][(node2, node1)] = weight_not_contained
+                weights[1][(node1, node2)] = weight_not_contained
+                weights[1][(node2, node1)] = weight_not_contained
+                weights['d'][(node1, node2)] = weight_contained
+                weights['d'][(node2, node1)] = weight_not_contained
             elif (node2, node1) in relations['d']:
-                weights[0][(node1, node2)] = -100
-                weights[0][(node2, node1)] = -100
-                weights[1][(node1, node2)] = -100
-                weights[1][(node2, node1)] = -100
-                weights['d'][(node1, node2)] = -100
-                weights['d'][(node2, node1)] = 100
+                weights[0][(node1, node2)] = weight_not_contained
+                weights[0][(node2, node1)] = weight_not_contained
+                weights[1][(node1, node2)] = weight_not_contained
+                weights[1][(node2, node1)] = weight_not_contained
+                weights['d'][(node1, node2)] = weight_not_contained
+                weights['d'][(node2, node1)] = weight_contained
             else:
-                weights[0][(node1, node2)] = -100
-                weights[0][(node2, node1)] = -100
-                weights[1][(node1, node2)] = -100
-                weights[1][(node2, node1)] = -100
-                weights['d'][(node1, node2)] = -100
-                weights['d'][(node2, node1)] = -100
+                weights[0][(node1, node2)] = weight_unknown
+                weights[0][(node2, node1)] = weight_unknown
+                weights[1][(node1, node2)] = weight_unknown
+                weights[1][(node2, node1)] = weight_unknown
+                weights['d'][(node1, node2)] = weight_unknown
+                weights['d'][(node2, node1)] = weight_unknown
 
     return weights
