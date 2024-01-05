@@ -5,12 +5,13 @@ from inspect import getsourcefile
 from typing import TYPE_CHECKING, Literal, Union, overload
 from fitch_graph_praktikum.util.typing import RelationDictionary
 import pickle as pk
+import pandas as pd
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 
 
-__all__ = ["load_relations"]
+__all__ = ["load_relations", "save_dataframe", "load_dataframe"]
 
 
 _options = [
@@ -61,3 +62,26 @@ def load_relations(
     with open(f"{path}/emptyRelations.pkl", 'rb') as empty_file:
         empty_relations = pk.load(empty_file)
     return {0: empty_relations, 1: bi_relations, "d": uni_relations}
+
+
+def save_dataframe(filename: str, frame: pd.DataFrame, absolute: bool = False):
+    path = abspath(filename)
+    if not absolute:
+        path = os.path.join(_rel_path, filename)
+    if not os.path.exists(dirname(path)):
+        os.makedirs(dirname(path))
+
+    frame.to_csv(path, sep='\t', header=True, index=True, index_label=False)
+
+
+def load_dataframe(filename: str, absolute: bool = False):
+    path = abspath(filename)
+    if not absolute:
+        path = os.path.join(_rel_path, filename)
+    if not os.path.exists(path):
+        return None
+
+    try:
+        return pd.read_csv(path, sep='\t', header=0, index_col=0)
+    except pd.errors.ParserError:
+        return None

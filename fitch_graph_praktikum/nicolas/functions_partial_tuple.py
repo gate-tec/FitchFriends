@@ -12,7 +12,8 @@ __all__ = ["delete_information", "get_reduced_relations"]
 
 def delete_information(
         relations: RelationDictionary,
-        percent_delete: int = 10
+        percent_delete: int = 10,
+
 ) -> "tuple[RelationDictionary, float]":
     e_0 = set(relations[0])
     e_1 = set(relations[1])
@@ -35,17 +36,17 @@ def delete_information(
         0: list(sorted(e_0.intersection(total_relations))),
         1: list(sorted(e_1.intersection(total_relations))),
         "d": list(sorted(e_d.intersection(total_relations)))
-    }, 1 - len(total_relations) / num_total
+    }, round((1 - len(total_relations) / num_total) * 100, 1)
 
 
 def get_reduced_relations(
         relations: RelationDictionary,
         list_percent_delete: list[int]
-) -> "Dict[int, RelationDictionary]":
+) -> "Dict[int, tuple[RelationDictionary, float]]":
     relation_dict = {}
 
     for percent_delete in list_percent_delete:
-        reduced_relations, _ = delete_information(relations=relations, percent_delete=percent_delete)
-        relation_dict[percent_delete] = reduced_relations
+        reduced_relations, loss = delete_information(relations=relations, percent_delete=percent_delete)
+        relation_dict[percent_delete] = (reduced_relations, loss)
 
     return relation_dict

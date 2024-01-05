@@ -20,7 +20,7 @@ def get_stored_cograph_relations(
         num_nodes: Literal[10, 15, 20, 25, 30],
         x_options: int,
         x_instances: int
-) -> "tuple[nx.DiGraph, RelationDictionary, Dict[int, RelationDictionary], bool]":
+) -> "tuple[nx.DiGraph, Dict[int, tuple[RelationDictionary, float, bool]]]":
     """
     Load relations `E_0`, `E_1`, and `E_d` from specified xenologous graph.
 
@@ -39,9 +39,8 @@ def get_stored_cograph_relations(
         Tuple containing:
 
         - the stored cograph
-        - the corresponding relations
-        - a dictionary mapping each information loss (10, 20, ..., 90) to the respective relations
-        - whether the corresponding relations are Fitch-SAT.
+        - a dictionary mapping each information loss (0, 10, 20, ..., 90) to the respective relations,
+          their effective loss, and whether these relations are Fitch-SAT.
 
     Raises
     ------
@@ -54,8 +53,10 @@ def get_stored_cograph_relations(
     cograph = rel_to_fitch(rels, nodes)
 
     reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
+    reduced_rels[0] = (rels, 0.0)
+    reduced_rels = dict(sorted(reduced_rels.items()))
 
-    return cograph, rels, reduced_rels, True
+    return cograph, {k: (rels, loss, True) for k, (rels, loss) in reduced_rels.items()}
 
 
 @Exception
@@ -66,8 +67,9 @@ class AlgorithmOneError:
 
 def get_random_cograph_relations(
         num_nodes: Literal[10, 15, 20, 25, 30],
-        top_down: bool = False
-) -> "tuple[nx.DiGraph, RelationDictionary, Dict[int, RelationDictionary], bool]":
+        top_down: bool = True,
+        do_sanity_check: bool = False
+) -> "tuple[nx.DiGraph, Dict[int, tuple[RelationDictionary, float, bool]]]":
     """
     Construct random cograph including its reduced sets of relations.
 
@@ -77,6 +79,8 @@ def get_random_cograph_relations(
         Number of nodes in the cograph.
     top_down: bool
         Whether the corresponding cotree should be constructed top-down (default: False).
+    do_sanity_check: bool
+        Whether the result of the fitch-SAT decision should be double-checked (default: False).
 
     Returns
     -------
@@ -84,14 +88,13 @@ def get_random_cograph_relations(
         Tuple containing:
 
         - the resulting cograph
-        - the corresponding relations
-        - a dictionary mapping each information loss (10, 20, ..., 90) to the respective relations
-        - whether the corresponding relations are Fitch-SAT.
+        - a dictionary mapping each information loss (0, 10, 20, ..., 90) to the respective relations,
+          their effective loss, and whether these relations are Fitch-SAT.
 
     Raises
     ------
     AlgorithmOneError
-        if sanity check of Algorithm 1 fails.
+        if sanity check of Algorithm 1 fails (only if `do_sanity_check` is True).
     """
     nodes = list(range(num_nodes))
 
@@ -105,16 +108,22 @@ def get_random_cograph_relations(
         rels: RelationDictionary = graph_to_rel(cograph)
 
     reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
+    reduced_rels[0] = (rels, 0.0)
+    reduced_rels = dict(sorted(reduced_rels.items()))
 
-    try:
-        fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
+    mapped_reduced_rels = {}
+    for k, (rels, loss) in reduced_rels.items():
+        try:
+            fitch_tree = algorithm_one(rels, nodes, order=(0, 1, 2))
 
-        # sanity check if resulting cotree actually explains a fitch graph
-        fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
-        if not check_fitch_graph(fitch_graph):
-            raise AlgorithmOneError
-        fitch_sat = True
-    except (NoSatRelation, NotFitchSatError):
-        fitch_sat = False
+            if do_sanity_check:
+                # sanity check if resulting cotree actually explains a fitch graph
+                fitch_graph = rel_to_fitch(cotree_to_rel(fitch_tree), nodes)
+                if not check_fitch_graph(fitch_graph):
+                    raise AlgorithmOneError
+            fitch_sat = True
+        except (NoSatRelation, NotFitchSatError):
+            fitch_sat = False
+        mapped_reduced_rels[k] = (rels, loss, fitch_sat)
 
-    return cograph, rels, reduced_rels, fitch_sat
+    return cograph, mapped_reduced_rels
