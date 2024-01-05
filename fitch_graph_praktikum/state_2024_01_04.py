@@ -15,9 +15,9 @@ samples_per_leafs = 100
 for num_nodes, i in tqdm(
         ((num_nodes, i) for num_nodes in [10, 15, 20, 25, 30] for i in range(samples_per_leafs)),
         total=5*samples_per_leafs,
-        ncols=20
+        ncols=100
 ):
-    _, all_rels = get_random_cograph_relations(num_nodes=num_nodes, top_down=True, ensure_base_fitch=False)
+    _, all_rels = get_random_cograph_relations(num_nodes=num_nodes, top_down=True, ensure_base_fitch=False, do_sanity_check=False)
 
     for nominal_loss, (rels, effective_loss, is_fitch_sat) in all_rels.items():
         records.append({
@@ -25,7 +25,7 @@ for num_nodes, i in tqdm(
             'Sample': i,
             'Nominal_Loss': nominal_loss,
             'Effective_Loss': effective_loss,
-            'isFitch_Sat': is_fitch_sat,
+            'is_Fitch_Sat': is_fitch_sat,
             'Relations': rels
         })
 
