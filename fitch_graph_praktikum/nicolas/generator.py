@@ -59,8 +59,7 @@ def get_stored_cograph_relations(
     return cograph, {k: (rels, loss, True) for k, (rels, loss) in reduced_rels.items()}
 
 
-@Exception
-class AlgorithmOneError:
+class AlgorithmOneError(Exception):
     """Raised when sanity check of algorithm 1 fails."""
     pass
 
@@ -69,7 +68,8 @@ def get_random_cograph_relations(
         num_nodes: Literal[10, 15, 20, 25, 30],
         top_down: bool = True,
         do_sanity_check: bool = False,
-        ensure_base_fitch: bool = True
+        ensure_base_fitch: bool = True,
+        clear_e_direct: bool = False
 ) -> "tuple[nx.DiGraph, Dict[int, tuple[RelationDictionary, float, bool]]]":
     """
     Construct random cograph including its reduced sets of relations.
@@ -119,7 +119,7 @@ def get_random_cograph_relations(
         cograph = construct_random_cograph(nodes=nodes)
         rels: RelationDictionary = graph_to_rel(cograph)
 
-    reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
+    reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)), clear_e_direct=clear_e_direct)
     reduced_rels[0] = (rels, 0.0)
     reduced_rels = dict(sorted(reduced_rels.items()))
 
