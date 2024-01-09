@@ -266,7 +266,11 @@ def sym_diff(relations_0, relations_1, n):
     return relative_difference / all_edges
 
 def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_weighted: dict, nodes: list,
-                                 partition_function, scoring_function, relations={0:[], 1:[], "d":[]} , uni=True, bi=True):
+                                 partition_function, scoring_function, relations=None, uni=True, bi=True):
+
+    # Initialize relations - here we collect the relations at each recursive step
+    if relations == None:
+        relations = {0: [], 1: [], "d": []}
 
     # Recursion abort condition
     if len(nodes) == 1:
@@ -283,12 +287,14 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
         for j in range(0, len(nodes)):
             if i == j:
                 continue
+            # G1
             graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
+            # G0
             graph_empty.add_edge(nodes[i], nodes[j],
                                        weight=empty_weighted[(nodes[i], nodes[j])])
+            # G->1
             graph_uni.add_edge(nodes[i], nodes[j],
-                                     weight=max(uni_weighted[(nodes[i], nodes[j])],
-                                                uni_weighted[(nodes[j], nodes[i])]))
+                                     weight=(uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])]) / 2)
 
 
     # If only two nodes are left, we can only choose one partition.
@@ -296,6 +302,7 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
         uni_partition = [[nodes[0]], [nodes[1]]]
         bi_partition = [[nodes[0]], [nodes[1]]]
         empty_partition = [[nodes[0]], [nodes[1]]]
+
     # Otherwise we partition as usual. Here it is expected that the partition functions returns a list of lists,
     # for example [[0, 1], [2, 3]]
     else:
