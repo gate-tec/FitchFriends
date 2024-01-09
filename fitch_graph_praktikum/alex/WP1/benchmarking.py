@@ -1,12 +1,11 @@
 import time
 from fitch_graph_praktikum.nicolas.benchmark_WP1.benchmarking import pipeline_algo1_012, pipeline_algo1_120, \
     pipeline_algo1_210, pipeline_algo2
-from fitch_graph_praktikum.nicolas.graph_io import load_relations
+from fitch_graph_praktikum.nicolas.graph_io import load_relations, save_dataframe
 from fitch_graph_praktikum.util.lib import sym_diff
 import pandas as pd
 from partial_cumulative_samples import create_partial_tuples_cumulativeLoss
 from fitch_graph_praktikum.util.typing import RelationDictionary
-
 
 # auf alle originalen Fitch-Graphen 2. und 2b generieren mit je 10-90 Loss (nicht kumulativ)
 
@@ -43,10 +42,10 @@ def benchmark_algorithms(sampleID, loss, relations: RelationDictionary, nodelist
     results_2 = [sym_diff_algo2, duration_algo2, relations_algo2]
 
     results = {'ID': sampleID, 'Loss': loss}
-    for algo_name, results in zip(['Algo1_012', 'Algo1_120', 'Algo1_210', 'Algo2'], [results_012, results_120, results_210, results_2]):
-        results[f"{algo_name}_Sym_Diff"] = results[0]
-        results[f"{algo_name}_Duration"] = round(results[1], 5)
-        results[f"{algo_name}_Results"] = results[2]
+    for algo_name, algo_results in zip(['Algo1_012', 'Algo1_120', 'Algo1_210', 'Algo2'], [results_012, results_120, results_210, results_2]):
+        results[f"{algo_name}_Sym_Diff"] = algo_results[0]
+        results[f"{algo_name}_Duration"] = round(algo_results[1], 5)
+        results[f"{algo_name}_Results"] = algo_results[2]
 
     return results
 
@@ -110,14 +109,13 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
 
                 nodes_count = samples_DF.at[i, 'Nodes']
 
-
+                node_list = [x for x in range(nodes_count)]
                 instace = samples_DF.at[i, 'Sample']
                 if 'x_options' in samples_DF.columns:
-                    node_list = [str(x) for x in range(nodes_count)]
+
                     x_option = samples_DF.at[i, 'x_options']
                     id = [nodes_count, x_option, instace]
                 else:
-                    node_list = [x for x in range(nodes_count)]
                     id = [nodes_count, instace]
                 continue
             else:
@@ -137,4 +135,5 @@ if __name__ == '__main__':
     sample = create_partial_tuples_cumulativeLoss(15, 5, 9, test_initial_relation, 0.1)
     test_df = pd.DataFrame(sample)
 
-    print(benchmark_algorithms_on_all_samples(test_df))
+    benchmark_df = benchmark_algorithms_on_all_samples(test_df)
+    save_dataframe('benchmark_results_cumulative_sample.tsv',benchmark_df)
