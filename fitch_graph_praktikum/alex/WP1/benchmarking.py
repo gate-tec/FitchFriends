@@ -42,9 +42,11 @@ def benchmark_algorithms(sampleID, loss, relations: RelationDictionary, nodelist
         sym_diff_algo2 = None
     results_2 = [sym_diff_algo2, duration_algo2, relations_algo2]
 
-    results = {'ID': sampleID, 'Loss': loss, 'Algo1_012': results_012, 'Algo1_120': results_120,
-               'Algo1_210': results_210,
-               'Algo2': results_2}
+    results = {'ID': sampleID, 'Loss': loss}
+    for algo_name, results in zip(['Algo1_012', 'Algo1_120', 'Algo1_210', 'Algo2'], [results_012, results_120, results_210, results_2]):
+        results[f"{algo_name}_Sym_Diff"] = results[0]
+        results[f"{algo_name}_Duration"] = round(results[1], 5)
+        results[f"{algo_name}_Results"] = results[2]
 
     return results
 
@@ -94,8 +96,8 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
             benchark_results.append(sample_benchmark)
 
             i = i + 1
-        benchark_df = pd.DataFrame(benchark_results)
-        return benchark_df
+        benchmark_df = pd.DataFrame(benchark_results)
+        return benchmark_df
 
     else:  # if no reference is given: benchmark through all samples within the dataframe
         rows_total = len(samples_DF)
@@ -126,8 +128,8 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
             except(UnboundLocalError):
                 print("No reference relations at 0% loss have been provided. Input-Dataframe needs to be corrected ")
                 return
-        benchark_df = pd.DataFrame(benchark_results)
-        return benchark_df
+        benchmark_df = pd.DataFrame.from_records(benchark_results)
+        return benchmark_df
 
 
 if __name__ == '__main__':
