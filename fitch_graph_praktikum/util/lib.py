@@ -266,7 +266,10 @@ def sym_diff(relations_0, relations_1, n):
     return relative_difference / all_edges
 
 def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_weighted: dict, nodes: list,
-                                 partition_function, scoring_function, relations={0:[], 1:[], "d":[]} , uni=True, bi=True):
+                                 partition_function, scoring_function, relations=None, uni=True, bi=True):
+
+    if relations is None:
+        relations = {0: [], 1: [], "d": []}
 
     # Recursion abort condition
     if len(nodes) == 1:
