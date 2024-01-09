@@ -1,6 +1,9 @@
 from create_partial_tuples import create_partial_tuples
 from create_random_dicograph import create_random_dicograph
-from fitch_graph_praktikum.util.lib import graph_to_rel
+from fitch_graph_praktikum.util.helper_functions import NoSatRelation, NotFitchSatError
+from fitch_graph_praktikum.util.lib import graph_to_rel, algorithm_one
+import networkx as nx
+import math
 
 
 def random_dicograph_to_partialtuple(nodes, loss):
@@ -12,9 +15,3 @@ def random_dicograph_to_partialtuple(nodes, loss):
     random_partial_tuples = create_partial_tuples(relations, loss)
     return random_partial_tuples
 
-
-if __name__ == '__main__':
-    number_of_nodes = 20
-
-    loss = (0.4)
-    print(random_dicograph_to_partialtuple(number_of_nodes, loss))
