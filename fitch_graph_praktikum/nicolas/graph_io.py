@@ -61,7 +61,11 @@ def load_relations(
         uni_relations = pk.load(uni_file)
     with open(f"{path}/emptyRelations.pkl", 'rb') as empty_file:
         empty_relations = pk.load(empty_file)
-    return {0: empty_relations, 1: bi_relations, "d": uni_relations}
+    return {
+        0: [(int(x), int(y)) for x, y in empty_relations],
+        1: [(int(x), int(y)) for x, y in bi_relations],
+        "d": [(int(x), int(y)) for x, y in uni_relations]
+    }
 
 
 def save_dataframe(filename: str, frame: pd.DataFrame, absolute: bool = False):
