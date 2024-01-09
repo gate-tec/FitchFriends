@@ -255,7 +255,7 @@ class LeidenPartition(BasePartition):
             yield LeidenPartition(new_partition_list, self.nodes, self.neighbors)
 
 
-def average_weight_per_edge_cut(graph: nx.Graph, partition: BasePartition, val_lambda: float = 0.75) -> "float":
+def average_weight_per_edge_cut(graph: nx.Graph, partition: BasePartition, val_lambda: float = 0.6) -> "float":
     node_mapping = {node: None for node in graph.nodes}
     community_data = {i: {'weight': 0.0, 'edges': 0, 'nodes': 0} for i in range(len(partition))}
     external_edge_weights = 0.0
@@ -527,6 +527,12 @@ if __name__ == '__main__':
 
     # test_part = partition_louvain(test_graph)
     # print(test_part)
+
+    # [[1, 2], [0, 3, 4]]
+    # [(0, 1, {'weight': 0.8280202664719893}), (0, 2, {'weight': 0.8468783050487141}), (0, 3, {'weight': 0.005807499470777189}), (1, 2, {'weight': 0.79559227057101}), (3, 4, {'weight': 0.09581249221137933})]
+
+    # [[0, 1, 2, 3], [4]]
+    # [(0, 1, {'weight': 0.20328625639809128}), (0, 2, {'weight': 0.16334338262731352}), (0, 3, {'weight': 0.4519652680782352}), (1, 2, {'weight': 0.4951572675695667}), (3, 4, {'weight': 0.7764183662304466})]
 
     test_part = partition_leiden(test_graph, val_gamma=1.0/7.0)
     print(test_part)
