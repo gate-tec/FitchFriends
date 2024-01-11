@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 
 
-__all__ = ["load_relations", "save_dataframe", "load_dataframe"]
+__all__ = ["load_relations", "save_dataframe", "load_dataframe", "delete_file"]
 
 
 _options = [
@@ -89,3 +89,13 @@ def load_dataframe(filename: str, absolute: bool = False):
         return pd.read_csv(path, sep='\t', header=0, index_col=0)
     except pd.errors.ParserError:
         return None
+
+
+def delete_file(filename: str, absolute: bool = False):
+    path = abspath(filename)
+    if not absolute:
+        path = os.path.join(_rel_path, filename)
+    if not os.path.exists(path):
+        return None
+
+    os.remove(path)
