@@ -7,6 +7,7 @@ import pandas as pd
 from partial_cumulative_samples import create_partial_tuples_cumulativeLoss
 from fitch_graph_praktikum.util.typing import RelationDictionary
 
+
 # auf alle originalen Fitch-Graphen 2. und 2b generieren mit je 10-90 Loss (nicht kumulativ)
 
 def benchmark_algorithms(sampleID, loss, relations: RelationDictionary, nodelist: list,
@@ -42,9 +43,10 @@ def benchmark_algorithms(sampleID, loss, relations: RelationDictionary, nodelist
     results_2 = [sym_diff_algo2, duration_algo2, relations_algo2]
 
     results = {'ID': sampleID, 'Loss': loss}
-    for algo_name, algo_results in zip(['Algo1_012', 'Algo1_120', 'Algo1_210', 'Algo2'], [results_012, results_120, results_210, results_2]):
-        results[f"{algo_name}_Sym_Diff"] = algo_results[0]
-        results[f"{algo_name}_Duration"] = round(algo_results[1], 5)
+    for algo_name, algo_results in zip(['Algo1_012', 'Algo1_120', 'Algo1_210', 'Algo2'],
+                                       [results_012, results_120, results_210, results_2]):
+        results[f"{algo_name}_Sym_Diff"] = round(algo_results[0],3)
+        results[f"{algo_name}_Duration_(sek)"] = round(algo_results[1], 5)
         results[f"{algo_name}_Results"] = algo_results[2]
 
     return results
@@ -65,20 +67,33 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
     if reference is not None:
 
         leaves = reference[0]
-        x_option = reference[1]
-        try:
-            x_instance = reference[2]
-        except(IndexError):
-            x_instance = reference[1]
-            x_option = None
+
+        default = 0
+        x_option = default
+        x_instance = default
+        if len(reference) == 3:
+            if 'x_options' not in samples_DF.columns:
+                return print(
+                    "If the reference states an x_option for the original Fitch-Graphs provided, a proper dataframe with x_options must be provided")
+            else:
+                x_option = reference[1]
+                x_instance = reference[2]
+
+        else:
+            if 'x_options' in samples_DF.columns:
+                return print(
+                    "The Dataframe states x_options for the original Fitch-Graphs provided. The reference provided must contain one as well.")
+            else:
+                x_instance = reference[1]
+                x_option = None
 
         if x_option is None:
             target_row = samples_DF.loc[
                 samples_DF['Nodes'] == leaves & samples_DF['Sample'] == x_instance & samples_DF['Nominal_Loss'] == 0]
         else:
             target_row = samples_DF.loc[
-                samples_DF['Nodes'] == leaves & samples_DF['x_options'] == x_option & samples_DF[
-                    'Sample'] == x_instance & samples_DF['Nominal_Loss'] == 0]
+            samples_DF['Nodes'] == leaves & samples_DF['x_options'] == x_option & samples_DF[
+                'Sample'] == x_instance & samples_DF['Nominal_Loss'] == 0]
 
         reference_relation = samples_DF.at[target_row, 'Relations']
         i = 1
@@ -126,9 +141,8 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
             except(UnboundLocalError):
                 print("No reference relations at 0% loss have been provided. Input-Dataframe needs to be corrected ")
                 return
-        benchmark_df = pd.DataFrame.from_records(benchark_results)
-        return benchmark_df
-
+    benchmark_df = pd.DataFrame.from_records(benchark_results)
+    return benchmark_df
 
 if __name__ == '__main__':
     test_initial_relation = load_relations(15, 5, 9)
@@ -136,4 +150,4 @@ if __name__ == '__main__':
     test_df = pd.DataFrame(sample)
 
     benchmark_df = benchmark_algorithms_on_all_samples(test_df)
-    save_dataframe('benchmark_results_cumulative_sample.tsv',benchmark_df)
+    save_dataframe('benchmark_results_cumulative_sample.tsv', benchmark_df)
