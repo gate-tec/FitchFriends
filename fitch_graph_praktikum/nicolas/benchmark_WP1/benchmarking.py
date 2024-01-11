@@ -7,7 +7,6 @@ import time
 
 
 def pipeline_algo1_012(partial_tuple: RelationDictionary, nodes: list) -> "tuple[RelationDictionary, float]":
-
     t1 = time.perf_counter()
     try:
         fitch_tree = algorithm_one(relations=partial_tuple, nodes=nodes, order=(0, 1, 2))
