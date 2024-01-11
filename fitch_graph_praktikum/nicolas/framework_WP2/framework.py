@@ -254,8 +254,14 @@ class LeidenPartition(BasePartition):
             new_partition_list[i].append(node)
             yield LeidenPartition(new_partition_list, self.nodes, self.neighbors)
 
+    def get_hash(self):
+        # [[node for entry in community for node in entry] for community in self.partition_list]
+        return hash(
+            tuple(sorted(tuple(sorted(tuple(sorted(node for node in entry)) for entry in community)) for community in self.partition_list))
+        )
 
-def average_weight_per_edge_cut(graph: nx.Graph, partition: BasePartition, val_lambda: float = 0.6) -> "float":
+
+def average_weight_per_edge_cut(graph: nx.Graph, partition: BasePartition, val_lambda: float = 1) -> "float":
     node_mapping = {node: None for node in graph.nodes}
     community_data = {i: {'weight': 0.0, 'edges': 0, 'nodes': 0} for i in range(len(partition))}
     external_edge_weights = 0.0
@@ -308,6 +314,52 @@ def average_weight_per_edge_cut(graph: nx.Graph, partition: BasePartition, val_l
     return external_term + val_lambda * internal_term
 
 
+def average_weight_per_edge_cut2(graph: nx.Graph, partition: BasePartition) -> "float":
+    node_mapping = {node: None for node in graph.nodes}
+    community_data = {i: {'weight': 0.0, 'edges': 0, 'nodes': 0} for i in range(len(partition))}
+    external_edge_weights = 0.0
+
+    min_weight = None
+    max_weight = None
+
+    num_edges = 0
+    num_cut_edges = 0
+    for node1, node2, data in graph.edges(data=True):
+        num_edges += 1
+
+        if min_weight is None or data['weight'] < min_weight:
+            min_weight = data['weight']
+        if max_weight is None or data['weight'] > max_weight:
+            max_weight = data['weight']
+
+        if node_mapping[node1] is None:
+            community1 = partition.get_community_for_base_node(node1)
+            node_mapping[node1] = community1
+            community_data[community1]['nodes'] += 1
+        else:
+            community1 = node_mapping[node1]
+        if node_mapping[node2] is None:
+            community2 = partition.get_community_for_base_node(node2)
+            node_mapping[node2] = community2
+            community_data[community2]['nodes'] += 1
+        else:
+            community2 = node_mapping[node2]
+
+        if community1 != community2:
+            external_edge_weights += data['weight']
+            num_cut_edges += 1
+        else:
+            community_data[community1]['edges'] += 1
+            community_data[community1]['weight'] += data['weight']
+
+    # External term
+    average_weight_per_cut_edge = external_edge_weights / num_cut_edges if num_cut_edges > 0 else 0.0
+    external_term = log_sig(average_weight_per_cut_edge, max_weight)
+
+    # good value for lambda ~0.01
+    return external_term
+
+
 #########################
 # Louvain Algortihm #####
 #########################
@@ -330,7 +382,7 @@ def partition_louvain(graph: nx.Graph) -> "list[list[Any]]":
 def _move_nodes(
         graph: nx.Graph,
         partition: LouvainPartition,
-        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut
+        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut2
 ) -> "LouvainPartition":
     mod_current = mod_func(graph, partition)
     nodes = partition.get_nodes()
@@ -363,9 +415,17 @@ def _move_nodes(
 ########################
 
 
+class LeidenLoopError(Exception):
+
+    def __init__(self, last_common_partition: LeidenPartition):
+        super().__init__('Leiden algorithm was trapped in a loop.')
+        self.last_common_partition = last_common_partition
+
+
 def partition_leiden(graph: nx.Graph, val_gamma: float = 1.0, theta: float = 1.0) -> "list[list[Any]]":
     # initial singleton partition
     partition = LeidenPartition.singleton_partition_from_graph(graph)
+    hash_map = {partition.get_hash(): 1}
 
     while True:
         partition = _move_nodes_fast(graph=graph, partition=partition)
@@ -375,13 +435,21 @@ def partition_leiden(graph: nx.Graph, val_gamma: float = 1.0, theta: float = 1.0
             partition_refined = _refine_partition(graph=graph, partition=partition, val_gamma=val_gamma, theta=theta)
             partition.aggregate_from_refined_partition(partition_refined)
 
+            hash_code = partition.get_hash()
+            if hash_code not in hash_map.keys():
+                hash_map[hash_code] = 1
+            elif hash_map[hash_code] < 3:
+                hash_map[hash_code] += 1
+            else:
+                raise LeidenLoopError(partition)
+
     return partition.to_flat_partition()
 
 
 def _move_nodes_fast(
         graph: nx.Graph,
         partition: LeidenPartition,
-        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut
+        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut2
 ) -> "LeidenPartition":
     queue = [node for node in partition.get_nodes()]
     in_queue = {node: True for node in partition.get_nodes()}
@@ -445,7 +513,7 @@ def _merge_nodes_subset(
         subset: list[frozenset],
         val_gamma: float = 1.0,
         theta: float = 1.0,
-        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut) -> "LeidenPartition":
+        mod_func: Callable[[nx.Graph, BasePartition], float] = average_weight_per_edge_cut2) -> "LeidenPartition":
     # calculate lens
     lens = {}
     len_subset = 0
@@ -490,10 +558,10 @@ def _merge_nodes_subset(
         if len(old_community) == 1:
             # node is in singleton community
 
-            prev_score = float(np.exp(0))
-            partition_mapping = [(prev_score, partition, 0.0)]
+            max_partition = partition
+            max_score = 0.0
+            max_prob = 0.0
 
-            # Line 37 of pseudocode
             for new_partition in partition.get_partitions_for_node(
                 node,
                 subset=subset,
@@ -502,17 +570,42 @@ def _merge_nodes_subset(
                 val_gamma=val_gamma
             ):
                 new_score = mod_func(graph, new_partition) - mod_current
-                if new_score >= 0.0:
-                    prev_score = prev_score + float(np.exp(1/theta * new_score))
-                    partition_mapping.append((prev_score, new_partition, new_score))
+                if new_score <= 0.0:
+                    continue
+                prob = np.random.exponential(1 / theta * new_score)
+                if prob > max_prob:
+                    # already ensures that the score is positive
+                    max_partition = new_partition
+                    max_score = new_score
+                    max_prob = prob
 
-            # Line 38 of pseudocode
-            selected_score = random.random() * prev_score
-            for score, new_partition, new_score in partition_mapping:
-                if selected_score <= score:
-                    # Line 39 of pseudocode
-                    partition = new_partition
-                    mod_current += new_score
+            partition = max_partition
+            # recalculate mod_current for the changed partition
+            mod_current += max_score
+
+            # prev_score = float(np.exp(0))
+            # partition_mapping = [(prev_score, partition, 0.0)]
+            #
+            # # Line 37 of pseudocode
+            # for new_partition in partition.get_partitions_for_node(
+            #     node,
+            #     subset=subset,
+            #     len_subset=len_subset,
+            #     subset_mapping=mapping,
+            #     val_gamma=val_gamma
+            # ):
+            #     new_score = mod_func(graph, new_partition) - mod_current
+            #     if new_score >= 0.0:
+            #         prev_score = prev_score + float(np.exp(1/theta * new_score))
+            #         partition_mapping.append((prev_score, new_partition, new_score))
+            #
+            # # Line 38 of pseudocode
+            # selected_score = random.random() * prev_score
+            # for score, new_partition, new_score in partition_mapping:
+            #     if selected_score <= score:
+            #         # Line 39 of pseudocode
+            #         partition = new_partition
+            #         mod_current += new_score
 
     return partition
 
@@ -525,8 +618,10 @@ if __name__ == '__main__':
     test_graph.add_edge(0, 3, weight=random.random())
     test_graph.add_edge(3, 4, weight=random.random())
 
-    # test_part = partition_louvain(test_graph)
-    # print(test_part)
+    print(test_graph.edges(data=True))
+
+    test_part = partition_louvain(test_graph)
+    print(test_part)
 
     # [[1, 2], [0, 3, 4]]
     # [(0, 1, {'weight': 0.8280202664719893}), (0, 2, {'weight': 0.8468783050487141}), (0, 3, {'weight': 0.005807499470777189}), (1, 2, {'weight': 0.79559227057101}), (3, 4, {'weight': 0.09581249221137933})]
@@ -534,6 +629,9 @@ if __name__ == '__main__':
     # [[0, 1, 2, 3], [4]]
     # [(0, 1, {'weight': 0.20328625639809128}), (0, 2, {'weight': 0.16334338262731352}), (0, 3, {'weight': 0.4519652680782352}), (1, 2, {'weight': 0.4951572675695667}), (3, 4, {'weight': 0.7764183662304466})]
 
-    test_part = partition_leiden(test_graph, val_gamma=1.0/7.0)
-    print(test_part)
-    print(test_graph.edges(data=True))
+    try:
+        test_part = partition_leiden(test_graph, val_gamma=1.0, theta=0.01)
+        print(test_part)
+    except LeidenLoopError as err:
+        print("Loop:")
+        print(err.last_common_partition.to_flat_partition())
