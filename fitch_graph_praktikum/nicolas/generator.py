@@ -19,7 +19,8 @@ __all__ = ["get_stored_cograph_relations", "get_random_cograph_relations"]
 def get_stored_cograph_relations(
         num_nodes: Literal[10, 15, 20, 25, 30],
         x_options: int,
-        x_instances: int
+        x_instances: int,
+        clear_e_direct: bool = False
 ) -> "tuple[nx.DiGraph, Dict[int, tuple[RelationDictionary, float, bool]]]":
     """
     Load relations `E_0`, `E_1`, and `E_d` from specified xenologous graph.
@@ -52,7 +53,7 @@ def get_stored_cograph_relations(
 
     cograph = rel_to_fitch(rels, nodes)
 
-    reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)))
+    reduced_rels = get_reduced_relations(rels, list(range(10, 99, 10)), clear_e_direct=clear_e_direct)
     reduced_rels[0] = (rels, 0.0)
     reduced_rels = dict(sorted(reduced_rels.items()))
 
