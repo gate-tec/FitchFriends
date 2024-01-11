@@ -48,7 +48,7 @@ def get_stored_cograph_relations(
     ValueError
         if `x_options` or `x_instances` is outside the given boundaries.
     """
-    nodes = [str(x) for x in range(num_nodes)]
+    nodes = [x for x in range(num_nodes)]
     rels = load_relations(x_leaves=num_nodes, x_options=x_options, x_instances=x_instances)
 
     cograph = rel_to_fitch(rels, nodes)

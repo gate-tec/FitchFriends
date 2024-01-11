@@ -1,3 +1,5 @@
+import json
+
 from fitch_graph_praktikum.nicolas.graph_io import load_relations, save_dataframe
 from fitch_graph_praktikum.nicolas.generator import get_stored_cograph_relations
 
@@ -21,7 +23,9 @@ for nodes in [10, 15, 20, 25, 30]:
                     'Nominal_Loss': nominal_loss,
                     'Effective_Loss': effective_loss,
                     'Is_Fitch_Sat': is_fitch_sat,
-                    'Relations': rels
+                    'Relations_0': json.dumps(rels[0]),
+                    'Relations_1': json.dumps(rels[1]),
+                    'Relations_d': json.dumps(rels['d'])
                 })
 
             _, all_rels = get_stored_cograph_relations(
@@ -35,7 +39,9 @@ for nodes in [10, 15, 20, 25, 30]:
                     'Nominal_Loss': nominal_loss,
                     'Effective_Loss': effective_loss,
                     'Is_Fitch_Sat': is_fitch_sat,
-                    'Relations': rels
+                    'Relations_0': json.dumps(rels[0]),
+                    'Relations_1': json.dumps(rels[1]),
+                    'Relations_d': json.dumps(rels['d'])
                 })
 
 save_dataframe('original_fitch_samples_nicolas.tsv', pd.DataFrame.from_records(records))

@@ -1,3 +1,4 @@
+import json
 import math
 from typing import TYPE_CHECKING, Literal, Union, overload
 from fitch_graph_praktikum.util.typing import RelationDictionary, WeightedRelationDictionary
@@ -152,3 +153,12 @@ def convert_to_weighted_relations(
                 weights['d'][(node2, node1)] = weight_unknown
 
     return weights
+
+
+def convert_to_relation_dict(rel_0, rel_1, rel2) -> "RelationDictionary":
+    rels: RelationDictionary = {
+        0: [(x, y) for x, y in (json.loads(rel_0) if type(rel_0) == str else rel_0)],
+        1: [(x, y) for x, y in (json.loads(rel_1) if type(rel_1) == str else rel_1)],
+        'd': [(x, y) for x, y in (json.loads(rel2) if type(rel2) == str else rel2)]
+    }
+    return rels
