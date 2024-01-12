@@ -1,32 +1,8 @@
 import random
-
 import numpy
-
 from fitch_graph_praktikum.alex.WP2.full_weighted_relations import generate_full_weighted_relations
 from fitch_graph_praktikum.util.lib import partition_heuristic_scaffold
-from typing import Literal
 import networkx as nx
-
-
-def average_weight_scoring(left: [], right: [], relations: dict[tuple[int, int], float]):
-    score = 0
-    counter = 0
-    for l in left:
-        for r in right:
-            if (l, r) in relations:
-                score += relations[(l, r)]
-                counter += 1
-    score = score / counter
-    return score
-
-
-def sum_weight_scoring(left: [], right: [], relations: dict[tuple[int, int], float]):
-    score = 0
-    for l in left:
-        for r in right:
-            if (l, r) in relations:
-                score += relations[(l, r)]
-    return score
 
 
 def greedy_bipartition(graph: nx.Graph):
@@ -52,8 +28,9 @@ def greedy_bipartition(graph: nx.Graph):
         score_new = score_new + graph[neighbor_cut]['weight']
         edges_cut.update(uncut_edges.pop(neighbor_cut))
 
-    score_old = score_new - 1
+    print("_initial cut_edge: ", cut, " score_new = ", score_new)
 
+    score_old = score_new - 1
     while score_new > score_old:
         nodes_backup = nodes
         score_old = score_new
@@ -102,4 +79,4 @@ if __name__ == '__main__':
     edges = [(0, 1, 2.0), (2, 0, 3.0), (1, 2, 0.5), (0, 3, 0.9), (1, 3, 1.5), (2, 3, 2.0)]
     G = nx.Graph()
     G.add_weighted_edges_from(edges)
-    print(G[0][1])
+    print(greedy_bipartition(G))
