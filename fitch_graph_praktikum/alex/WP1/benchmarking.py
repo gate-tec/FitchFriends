@@ -1,8 +1,9 @@
+import os
 import time
 from fitch_graph_praktikum.nicolas.benchmark_WP1.benchmarking import pipeline_algo1_012, pipeline_algo1_120, \
     pipeline_algo1_210, pipeline_algo2
 from fitch_graph_praktikum.nicolas.functions_partial_tuple import convert_to_relation_dict
-from fitch_graph_praktikum.nicolas.graph_io import load_relations, save_dataframe
+from fitch_graph_praktikum.nicolas.graph_io import load_relations, save_dataframe, delete_file
 from fitch_graph_praktikum.util.lib import sym_diff
 import pandas as pd
 from fitch_graph_praktikum.alex.WP1.partial_cumulative_samples import create_partial_tuples_cumulativeLoss
@@ -184,7 +185,11 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
                 return
 
         # speed up with concurrent futures
-        with concurrent.futures.ProcessPoolExecutor(max_workers=7) as executor:
+        threads = max(os.cpu_count() - 1, 2)
+        print(f'Multiprocessing on {threads} cores:')
+        call_counter = 0
+        last_stable_frame = None
+        with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
             with tqdm(total=len(benchmark_calls), desc='Calls', disable=False) as progress:
                 work_load = {executor.submit(
                     benchmark_algorithms,
@@ -201,15 +206,27 @@ def benchmark_algorithms_on_all_samples(samples_DF: pd.DataFrame, reference=None
                     index = work_load[future]
                     try:
                         instance_benchmark = future.result()
+                        call_counter += 1
                     except Exception as exc:
                         # catch thrown exceptions and store for printing later on
                         progress.write('%d generated an exception: %s' % (index, exc))
                     else:
                         benchark_results.append(instance_benchmark)
+                        if call_counter % 2000 == 0:
+                            # safety store data
+                            next_frame = f"temp-{time.perf_counter()}-{call_counter}"
+                            save_dataframe(next_frame, pd.DataFrame.from_records(benchark_results))
+                            if last_stable_frame is not None:
+                                delete_file(last_stable_frame)
+                            last_stable_frame = next_frame
 
     benchmark_df = pd.DataFrame.from_records(benchark_results)
     benchmark_df = benchmark_df.sort_values(by=['ID', 'Loss']).reset_index(drop=True)
     benchmark_df.loc[:, 'ID'] = benchmark_df.loc[:, 'ID'].apply(lambda x: list(y for y in x))
+
+    if last_stable_frame is not None:
+        delete_file(last_stable_frame)
+
     return benchmark_df
 
 
