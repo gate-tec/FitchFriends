@@ -11,12 +11,12 @@ if TYPE_CHECKING:
     from typing import Any, Dict, Optional
 
 
-__all__ = ["load_relations", "save_dataframe", "load_dataframe"]
+__all__ = ["load_relations", "save_dataframe", "load_dataframe", "delete_file"]
 
 
 _options = [
-    "D0.3_L0.3_H0.9", "D0.5_L0.5_H0.5", "D0.5_L0.5_H0.25", "D0.5_L0.5_H1.0",
-    "D0.5_L1.0_H0.25", "D0.25_L0.5_H1.0", "D1.0_L0.5_H0.25"
+    "D0.5_L0.5_H0.25", "D0.5_L1.0_H0.25", "D1.0_L0.5_H0.25", "D0.5_L0.5_H0.5",
+    "D0.3_L0.3_H0.9", "D0.25_L0.5_H1.0", "D0.5_L0.5_H1.0"
 ]
 _instances = list(range(100))
 _rel_path = os.path.join(dirname(abspath(getsourcefile(lambda: 0))), '../../graph-prak-GFH')
@@ -61,7 +61,11 @@ def load_relations(
         uni_relations = pk.load(uni_file)
     with open(f"{path}/emptyRelations.pkl", 'rb') as empty_file:
         empty_relations = pk.load(empty_file)
-    return {0: empty_relations, 1: bi_relations, "d": uni_relations}
+    return {
+        0: [(int(x), int(y)) for x, y in empty_relations],
+        1: [(int(x), int(y)) for x, y in bi_relations],
+        "d": [(int(x), int(y)) for x, y in uni_relations]
+    }
 
 
 def save_dataframe(filename: str, frame: pd.DataFrame, absolute: bool = False):
@@ -85,3 +89,13 @@ def load_dataframe(filename: str, absolute: bool = False):
         return pd.read_csv(path, sep='\t', header=0, index_col=0)
     except pd.errors.ParserError:
         return None
+
+
+def delete_file(filename: str, absolute: bool = False):
+    path = abspath(filename)
+    if not absolute:
+        path = os.path.join(_rel_path, filename)
+    if not os.path.exists(path):
+        return None
+
+    os.remove(path)

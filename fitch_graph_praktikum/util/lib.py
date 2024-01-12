@@ -1,6 +1,7 @@
 import random
 from copy import deepcopy
 import networkx as nx
+import statistics
 from fitch_graph_praktikum.util.helper_functions import *
 
 def graph_to_rel(graph: nx.DiGraph):
@@ -31,6 +32,7 @@ def graph_to_rel(graph: nx.DiGraph):
 
     return relations
 
+
 def rel_to_fitch(relations: dict, nodes):
     # Init graph and nodes.
     graph = nx.DiGraph()
@@ -41,6 +43,7 @@ def rel_to_fitch(relations: dict, nodes):
     graph.add_edges_from(relations["d"])
 
     return graph
+
 
 def check_fitch_graph(graph: nx.DiGraph):
     nodes = graph.nodes
@@ -61,7 +64,7 @@ def check_fitch_graph(graph: nx.DiGraph):
                     return False
 
                 # F2
-                elif (x, y) not in edges and (y, x) in edges and\
+                elif (x, y) not in edges and (y, x) in edges and \
                         (x, z) in edges and (z, x) not in edges \
                         and (y, z) not in edges and (z, y) in edges:
                     return False
@@ -104,6 +107,7 @@ def check_fitch_graph(graph: nx.DiGraph):
 
     return True
 
+
 def cotree_to_rel(cotree):
     #
     # You need a special structure, in case you want to use this to parse randomly generated cotrees.
@@ -141,7 +145,7 @@ def cotree_to_rel(cotree):
         else:
             clusters[list(ct.predecessors(n[0]))[0]]["direct_leaves"] += [n[0]]
 
-    completed_graph = {0:[], 1:[], "d":[]}
+    completed_graph = {0: [], 1: [], "d": []}
     count_uni_edges = 0
 
     queue = [k for k in clusters if clusters[k]['successor_clusters'] == []]
@@ -166,7 +170,7 @@ def cotree_to_rel(cotree):
             elif clusters[q]["clustertype"] == "u":
                 for c0 in range(len(clusters[q]["leaves"])):
                     x = clusters[q]["leaves"][c0]
-                    for c1 in range(c0+1, len(clusters[q]["leaves"])):
+                    for c1 in range(c0 + 1, len(clusters[q]["leaves"])):
                         y = clusters[q]["leaves"][c1]
                         count_uni_edges += 1
                         completed_graph["d"] += [(x, y)]
@@ -207,7 +211,7 @@ def cotree_to_rel(cotree):
             elif clusters[q]["clustertype"] == "u":
                 for c0 in range(len(clusters[q]["order"])):
                     cluster_0 = clusters[q]["order"][c0]
-                    for c1 in range(c0+1, len(clusters[q]["order"])):
+                    for c1 in range(c0 + 1, len(clusters[q]["order"])):
                         cluster_1 = clusters[q]["order"][c1]
                         for x in cluster_0:
                             for y in cluster_1:
@@ -234,6 +238,7 @@ def cotree_to_rel(cotree):
 
     return completed_graph
 
+
 def generate_weights(relation, distribution, parameters, symmetric=True):
     weighted_relation = {}
 
@@ -248,8 +253,8 @@ def generate_weights(relation, distribution, parameters, symmetric=True):
             weighted_relation[(r[1], r[0])] = weight
         return weighted_relation
 
-def sym_diff(relations_0, relations_1, n):
 
+def sym_diff(relations_0, relations_1, n):
     # Implements the symmetric distance as descibed in the practical script.
     difference_empty = set(relations_0[0]).difference(set(relations_1[0])).union(
         set(relations_1[0]).difference(set(relations_0[0])))
@@ -265,8 +270,13 @@ def sym_diff(relations_0, relations_1, n):
 
     return relative_difference / all_edges
 
+
 def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_weighted: dict, nodes: list,
-                                 partition_function, scoring_function, relations={0:[], 1:[], "d":[]} , uni=True, bi=True):
+                                 partition_function, scoring_function, relations=None, uni=True, bi=True, median=False, reciprocal=False):
+
+    # Initialize relations - here we collect the relations at each recursive step
+    if relations == None:
+        relations = {0: [], 1: [], "d": []}
 
     # Recursion abort condition
     if len(nodes) == 1:
@@ -277,18 +287,45 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
     graph_empty = nx.Graph()
     graph_uni = nx.Graph()
 
+    # Compute the median for each of the weights.
+    bi_list = [bi_weighted[k] for k in bi_weighted.keys()]
+    uni_list = [uni_weighted[k] for k in uni_weighted.keys()]
+    empty_list = [empty_weighted[k] for k in empty_weighted.keys()]
+
+    bi_med = statistics.median(bi_list)
+    uni_med = statistics.median(uni_list)
+    empty_med = statistics.median(empty_list)
+
     # Add all the edge weights. You could also add a filter here that,
     # for example, could add only edges above a certain weight
     for i in range(0, len(nodes)):
         for j in range(0, len(nodes)):
             if i == j:
                 continue
-            graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
-            graph_empty.add_edge(nodes[i], nodes[j],
-                                       weight=empty_weighted[(nodes[i], nodes[j])])
-            graph_uni.add_edge(nodes[i], nodes[j],
-                                     weight=max(uni_weighted[(nodes[i], nodes[j])],
-                                                uni_weighted[(nodes[j], nodes[i])]))
+            if median:
+                if bi_weighted[(nodes[i], nodes[j])] <= bi_med:
+                    # graph_bi.add_edge(nodes[i], nodes[j], weight=1.0)
+                    graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
+                if empty_weighted[(nodes[i], nodes[j])] <= empty_med:
+                    graph_empty.add_edge(nodes[i], nodes[j],
+                                           weight=empty_weighted[(nodes[i], nodes[j])])
+                if (uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2 <= uni_med:
+                    graph_uni.add_edge(nodes[i], nodes[j],
+                                         weight=(uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2)
+            else:
+                if reciprocal:
+                    graph_bi.add_edge(nodes[i], nodes[j], weight=1/bi_weighted[(nodes[i], nodes[j])])
+                    graph_empty.add_edge(nodes[i], nodes[j],
+                                         weight=1/empty_weighted[(nodes[i], nodes[j])])
+                    graph_uni.add_edge(nodes[i], nodes[j],
+                                       weight=1/((uni_weighted[(nodes[i], nodes[j])] + uni_weighted[
+                                           (nodes[j], nodes[i])]) / 2))
+                else:
+                    graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
+                    graph_empty.add_edge(nodes[i], nodes[j],
+                                           weight=empty_weighted[(nodes[i], nodes[j])])
+                    graph_uni.add_edge(nodes[i], nodes[j],
+                                             weight=((uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2))
 
 
     # If only two nodes are left, we can only choose one partition.
@@ -296,6 +333,7 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
         uni_partition = [[nodes[0]], [nodes[1]]]
         bi_partition = [[nodes[0]], [nodes[1]]]
         empty_partition = [[nodes[0]], [nodes[1]]]
+
     # Otherwise we partition as usual. Here it is expected that the partition functions returns a list of lists,
     # for example [[0, 1], [2, 3]]
     else:
@@ -420,16 +458,19 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
         # Continue to recursively partition left_bi and right_bi. Resulting edges are collected in 'relations'.
         relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, left_bi, partition_function,
                                                  scoring_function, relations, uni=uni, bi=bi)
-        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, right_bi, partition_function,
+        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, right_bi,
+                                                 partition_function,
                                                  scoring_function, relations)
         return relations
 
     if part_empty:
         # Continue to recursively partition left_empty and right_empty. Resulting edges are collected in 'relations'.
         # We forbid to partition G_1 and G_->1 for left_empty and right_empty.
-        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, left_empty, partition_function,
-                                                scoring_function, relations, uni=False, bi=False)
-        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, right_empty, partition_function,
+        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, left_empty,
+                                                 partition_function,
+                                                 scoring_function, relations, uni=False, bi=False)
+        relations = partition_heuristic_scaffold(uni_weighted, bi_weighted, empty_weighted, right_empty,
+                                                 partition_function,
                                                  scoring_function, relations, uni=False, bi=False)
         return relations
 
@@ -443,6 +484,7 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
                                                  partition_function,
                                                  scoring_function, relations, uni=uni, bi=bi)
         return relations
+
 
 def algorithm_one(relations, nodes, order, symbol_attr='symbol'):
     """
@@ -489,6 +531,7 @@ def algorithm_one(relations, nodes, order, symbol_attr='symbol'):
     # End
     return T
 
+
 def algorithm_two(V, variables_uni, variables_bi, variables_empty):
     """
     Searchs for a set of relationships between members of V
@@ -527,12 +570,12 @@ def algorithm_two(V, variables_uni, variables_bi, variables_empty):
     E_star = {0: set(), 1: set(), 'd': set()}
 
     w_relations_new = [[k, w_relations[k]] for k in w_relations.keys()]
-    w_relations_sorted = sorted(w_relations_new, reverse=True, key=lambda x: max([x[1][k] for k in x[1].keys()]) )
+    w_relations_sorted = sorted(w_relations_new, reverse=True, key=lambda x: max([x[1][k] for k in x[1].keys()]))
 
     for t in w_relations_sorted:
         x, y = tuple(t[0])[0], tuple(t[0])[1]
 
-        Rs = sorted(t[1], key= lambda x: t[1][x], reverse=True)
+        Rs = sorted(t[1], key=lambda x: t[1][x], reverse=True)
         # print(t[1])
         # print(Rs)
         # print("-----")
@@ -547,7 +590,7 @@ def algorithm_two(V, variables_uni, variables_bi, variables_empty):
                 E_aux[rel_type].add(rel)
 
             try:
-                algorithm_one({0:E_aux[0], 1:E_aux[1], "d":E_aux['d']}, V, (0, 1, 2))
+                algorithm_one({0: E_aux[0], 1: E_aux[1], "d": E_aux['d']}, V, (0, 1, 2))
                 E_star = E_aux
                 flag = False
                 break
@@ -558,8 +601,8 @@ def algorithm_two(V, variables_uni, variables_bi, variables_empty):
 
     return {0: list(E_star[0]), 1: list(E_star[1]), "d": list(E_star["d"])}
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     # Init some nodes
     nodes = [0, 1, 2]
 

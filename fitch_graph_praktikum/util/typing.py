@@ -13,5 +13,5 @@ RelationDictionary: TypedDict = TypedDict(
 
 WeightedRelationDictionary: TypedDict = TypedDict(
     'WeightedRelationDictionary',
-    {0: "Dict[tuple, int]", 1: "Dict[tuple, int]", 'd': "Dict[tuple, int]"}
+    {0: "Dict[tuple, float]", 1: "Dict[tuple, float]", 'd': "Dict[tuple, float]"}
 )
