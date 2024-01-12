@@ -30,20 +30,61 @@ def sum_weight_scoring(left: [], right: [], relations: dict[tuple[int, int], flo
 
 
 def greedy_bipartition(graph: nx.Graph):
-    nodes = list(graph.nodes)
-    edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
-    score_old = -1
-    score_new = 0
-    c = random.choice(nodes)
-    neighbors = graph.neighbors(c)
-    while score_new > score_old:
+    nodes = [list(graph.nodes), []]
+    uncut_edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
+    edges_cut = dict()
 
-        c = random.choice(nodes)
-        neighbors = graph.neighbors(c)
-        for neighbor in neighbors:
-        score = score + graph[c][neighbor]['weight']
-    while
-    # test = partition_heuristic_scaffold({}, {}, {}, [], partition_function=0, scoring_function=0)
+    score_new = 0
+
+    cut = max(uncut_edges.keys(), key=uncut_edges.get)
+    edges_cut.update(uncut_edges.pop(cut))
+    print(nodes)
+    nodes[1].append(nodes[0].pop(cut[0]))
+    print(nodes)
+    score_new = uncut_edges[cut]
+    print("_initial cut_edge: ", cut, " score_new = ", score_new)
+
+    neighbours = set(graph.neighbors(cut[0]))
+    neighbours.remove(cut[1])
+
+    for n in neighbours:
+        neighbor_cut = [cut[0]][n]
+        score_new = score_new + graph[neighbor_cut]['weight']
+        edges_cut.update(uncut_edges.pop(neighbor_cut))
+
+    score_old = score_new - 1
+
+    while score_new > score_old:
+        nodes_backup = nodes
+        score_old = score_new
+
+        cut = None
+        neighbours = set()
+        for n in nodes[1]:
+            neighbours.update({neighbour for neighbour in list(graph.neighbors(n))})
+
+        for ue in uncut_edges:
+            if ue[1] not in nodes[1] and ue[0] not in nodes[1]:
+                if ue[0] in neighbours or ue[1] in neighbours:
+                    if cut is None or uncut_edges[cut] > uncut_edges[ue]:
+                        cut = ue
+                        print("potential cut: ", cut)
+
+        neighbours = set(graph.neighbors(cut[0]))
+        for n in nodes[1]:
+            neighbours.remove(n)
+        for n in neighbours:
+            neighbor_cut = [cut[0]][n]
+            score_ = score_new + graph[neighbor_cut]['weight']
+            edges_cut.update(uncut_edges.pop(neighbor_cut))
+
+
+            max(uncut_edges.keys(), key=uncut_edges.get)
+
+    return
+
+
+# test = partition_heuristic_scaffold({}, {}, {}, [], partition_function=0, scoring_function=0)
 
 
 if __name__ == '__main__':
