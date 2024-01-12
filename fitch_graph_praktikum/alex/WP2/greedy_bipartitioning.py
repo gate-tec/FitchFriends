@@ -5,63 +5,113 @@ from fitch_graph_praktikum.util.lib import partition_heuristic_scaffold
 import networkx as nx
 
 
-def greedy_bipartition(graph: nx.Graph):
+def greedy_bipartition_sum(graph: nx.Graph):
+
+    def update_edges_cut(nodes: list):
+        cutted_edges = dict()
+        for n0 in nodes[0]:
+            for n1 in nodes[1]:
+                if (n0, n1) in edges:
+                    edges_cut.update(edges_to_cut.pop(n0, n1))
+        return cutted_edges
+
+    def calc_score_sum(edges_cut: dict):
+        score = sum(edges_cut[e] for e in edges_cut)
+        return score
+
+    def calc_score_ave(edges_cut: dict):
+        score = sum(edges_cut[e] for e in edges_cut) / len(edges_cut) if len(edges_cut) > 0 else 0
+        return score
+
+    def return_neighbours_new_part(node_list):
+        neighbours = set()
+        for n in node_list[1]:
+            neighbours.update({neighbour for neighbour in list(graph.neighbors(n))})
+        for n in node_list[1]:
+            neighbours.remove(n)
+
+        return neighbours
+
+    def best_greedy_move(nodeslist: [], reference_score: float = None):
+        neighbours = return_neighbours_new_part(nodeslist)
+        nodes_updated = False
+        greedy_prime = nodeslist
+
+        for n0 in nodeslist[0]:
+            if n0 not in neighbours:
+                continue
+            else:
+                updated = True
+                greedy_nodes = nodeslist
+                greedy_nodes[1].append(greedy_nodes[0].pop(n0))
+                greedy_test_score = calc_score_sum(update_edges_cut(greedy_nodes))
+
+                if greedy_test_score > reference_score or reference_score is None:
+                    greedy_score = greedy_test_score
+                    greedy_prime = greedy_nodes
+                    if reference_score is None:
+                        reference_score = greedy_score
+
+        if nodes_updated is True:
+            return greedy_prime
+        else:
+            return False
+
+    ####################################################################################################################
     nodes = [list(graph.nodes), []]
-    uncut_edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
+    edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
+    edges_to_cut = edges
     edges_cut = dict()
 
-    score_new = 0
+    # cut = max(edges_to_cut.keys(), key=edges_to_cut.get)
+    # cut_node = cut[0]
+    # nodes[1].append(nodes[0].pop(cut_node))
+    #
+    # edges_cut = update_edges_cut(nodes)
+    # score = calc_score_sum()
 
-    cut = max(uncut_edges.keys(), key=uncut_edges.get)
-    edges_cut.update(uncut_edges.pop(cut))
-    print(nodes)
-    nodes[1].append(nodes[0].pop(cut[0]))
-    print(nodes)
-    score_new = uncut_edges[cut]
-    print("_initial cut_edge: ", cut, " score_new = ", score_new)
+    nodes = best_greedy_move(nodes)
+    edges_cut = update_edges_cut(nodes)
+    score = calc_score_sum(edges_cut)
+    print("nodes, ", nodes, ", score_new :", score)
 
-    neighbours = set(graph.neighbors(cut[0]))
-    neighbours.remove(cut[1])
+    score_old = score - 1
+    while score > score_old:
+        score_old = score
 
-    for n in neighbours:
-        neighbor_cut = [cut[0]][n]
-        score_new = score_new + graph[neighbor_cut]['weight']
-        edges_cut.update(uncut_edges.pop(neighbor_cut))
+        greedy_change = best_greedy_move(nodes, reference_score=score_old)
 
-    print("_initial cut_edge: ", cut, " score_new = ", score_new)
+        if greedy_change is not False:
+            nodes = greedy_change
+            edges_cut = update_edges_cut(nodes)
+            score = calc_score_ave(edges_cut)
+            print("nodes, ", nodes, ", score_new :", score)
 
-    score_old = score_new - 1
-    while score_new > score_old:
-        nodes_backup = nodes
-        score_old = score_new
+        else:
+            greedy_prime_score = score_old
+            # greedy next move fehlgeschlagen -> ein Element aus nodes[1] zurück zu nodes[0] packen
+            for i in range(len(nodes[1]) - 1):
+                greedy_nodes = nodes
+                greedy_nodes[0].append(greedy_nodes[1].pop(greedy_nodes[1][i]))
 
-        cut = None
-        neighbours = set()
-        for n in nodes[1]:
-            neighbours.update({neighbour for neighbour in list(graph.neighbors(n))})
+                greedy_change = best_greedy_move(nodes, reference_score=score_old)
 
-        for ue in uncut_edges:
-            if ue[1] not in nodes[1] and ue[0] not in nodes[1]:
-                if ue[0] in neighbours or ue[1] in neighbours:
-                    if cut is None or uncut_edges[cut] > uncut_edges[ue]:
-                        cut = ue
-                        print("potential cut: ", cut)
+                if greedy_change is not False:
+                    greedy_score =  calc_score_sum(update_edges_cut(greedy_change))
+                    if greedy_score <= greedy_prime_score:
+                        continue
+                    else:
+                        greedy_prime = greedy_change
+                        greedy_prime_score = greedy_score
+            score = greedy_prime_score
 
-        neighbours = set(graph.neighbors(cut[0]))
-        for n in nodes[1]:
-            neighbours.remove(n)
-        for n in neighbours:
-            neighbor_cut = [cut[0]][n]
-            score_ = score_new + graph[neighbor_cut]['weight']
-            edges_cut.update(uncut_edges.pop(neighbor_cut))
-
-
-            max(uncut_edges.keys(), key=uncut_edges.get)
-
-    return
+    return nodes
 
 
-# test = partition_heuristic_scaffold({}, {}, {}, [], partition_function=0, scoring_function=0)
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -79,4 +129,4 @@ if __name__ == '__main__':
     edges = [(0, 1, 2.0), (2, 0, 3.0), (1, 2, 0.5), (0, 3, 0.9), (1, 3, 1.5), (2, 3, 2.0)]
     G = nx.Graph()
     G.add_weighted_edges_from(edges)
-    print(greedy_bipartition(G))
+    print(greedy_bipartition_sum(G))
