@@ -58,7 +58,8 @@ def log_sig(a, b):
     x0 = min(a, b)
     x1 = max(a, b)
     if x0 < 0.0:
-        raise ValueError('function log_sig is only defined on positive values.')
+        # function log_sig is only defined on positive values
+        return -1.0
     if x0 <= 0.0000000000000001 or x1 <= 0.0000000000000001:
         return 0.0
     return 2 / (1 + np.exp(-np.log2(x0 / x1)))
