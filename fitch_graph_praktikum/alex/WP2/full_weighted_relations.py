@@ -6,12 +6,13 @@ import numpy as np
 
 
 def generate_full_weighted_relations(number_of_nodes: int, relations: dict, distribution_TP, parameters_TP, distribution_FP,
-                                parameters_FP, symmetric=True):
+                                parameters_FP):
     """generates weighted relations in the format of a WeightedRelationDictionary provided in nicolas/typing """
-    nodes = [x for x in range(number_of_nodes)]
+    # nodes = [x for x in range(number_of_nodes)]
     weighted_relations = {0: {}, 1: {}, 'd': {}}
     relations_complement = {0: [], 1: [], 'd': []}
     operations = [0, 1, 'd']
+    symmetrics = [True, True, False]
     for i in range(number_of_nodes):
         for j in range(number_of_nodes):
             if i == j:
@@ -24,9 +25,9 @@ def generate_full_weighted_relations(number_of_nodes: int, relations: dict, dist
                 relations_complement['d'].append((i, j))
 
     for i in range(3):
-        weights_original = generate_weights(relations[operations[i]], distribution_TP, parameters_TP, symmetric)
+        weights_original = generate_weights(relations[operations[i]], distribution_TP, parameters_TP, symmetrics[i])
         weights_complement = generate_weights(relations_complement[operations[i]], distribution_FP, parameters_FP,
-                                              symmetric)
+                                              symmetrics[i])
 
         weighted_relations[operations[i]] = {k: round(v, 3) for k, v in
                                              {**weights_original, **weights_complement}.items()}
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     # print(numpy.random.normal)
     test_relations = {0: [(1, 2), (2, 1)], 1: [(0, 1), (1, 0)], 'd': [(0, 2)]}
     test_weights_sym = generate_full_weighted_relations(3, test_relations, numpy.random.normal, [3, 0.75],
-                                                   numpy.random.normal, [1, 0.5], symmetric=True)
+                                                   numpy.random.normal, [1, 0.5])
     # test_weights_asym = generate_weighted_relations(test_relations, numpy.random.normal, [3, 0.75], symmetric=False)
     # print(test_weights_sym)
     for k, v in test_weights_sym.items():
