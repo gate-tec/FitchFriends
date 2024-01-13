@@ -18,9 +18,12 @@ from fitch_graph_praktikum.nicolas.graph_io import load_relations, delete_file, 
 
 from fitch_graph_praktikum.nicolas.framework_WP2.framework_functions import (
     bi_partition_random,
+    bi_partition_greedy_avg, bi_partition_greedy_sum,
     bi_partition_louvain_sum_edge_cut, bi_partition_louvain_average_edge_cut,
+    bi_partition_louvain_average_edge_cut_mod,
     bi_partition_leiden_average_edge_cut_gamma1_theta1, bi_partition_leiden_sum_edge_cut_gamma1_theta1,
-    bi_partition_leiden_average_edge_cut_gamma1_7_theta001, bi_partition_leiden_sum_edge_cut_gamma1_7_theta001
+    bi_partition_leiden_average_edge_cut_gamma1_7_theta001, bi_partition_leiden_sum_edge_cut_gamma1_7_theta001,
+    bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001
 )
 from fitch_graph_praktikum.alex.WP2.weight_scoring_for_partitioning import average_weight_scoring, sum_weight_scoring
 
@@ -29,7 +32,9 @@ def _serialize_weights(weights: dict[tuple[int, int], float]) -> "str":
     return json.dumps([{'k': k, 'v': v} for k, v in weights.items()])
 
 
-def benchmark_algos_on_graph(sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP) -> "tuple[Any, Any]":
+def benchmark_algos_on_graph(
+        sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP
+) -> "tuple[Any, Any]":
 
     # generate random weights
     full_weight_relations: WeightedRelationDictionary = generate_full_weighted_relations(
@@ -49,20 +54,29 @@ def benchmark_algos_on_graph(sampleID, number_of_nodes: int, relations: Relation
         'ID': sampleID
     }
 
-    # TODO: complete with greedy
     functions = [
         ('RandomAvg', bi_partition_random, average_weight_scoring, False, False),
+        ('GreedyAvg', bi_partition_greedy_avg, average_weight_scoring, False, False),
+        ('GreedySum', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg', bi_partition_louvain_average_edge_cut, average_weight_scoring, False, False),
+        ('LouvainAvgMod', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, False, False),
         ('LouvainSum', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, False, False),
         ('LeidenAvg_1_1', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, False, False),
+        ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, False, False),
         ('LeidenSum_1_1', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, False, False),
         ('LeidenAvg_1_7_001', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, False, False),
+        ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, False, False),
         ('LeidenSum_1_7_001', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, False, False),
+        ('GreedyAvg_med', bi_partition_greedy_avg, average_weight_scoring, False, False),
+        ('GreedySum_med', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg_med', bi_partition_louvain_average_edge_cut, average_weight_scoring, True, True),
+        ('LouvainAvgMod_med', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, True, True),
         ('LouvainSum_med', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, True, True),
         ('LeidenAvg_1_1_med', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, True, True),
+        ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, True, True),
         ('LeidenSum_1_1_med', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, True, True),
         ('LeidenAvg_1_7_001_med', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, True, True),
+        ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, True, True),
         ('LeidenSum_1_7_001_med', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, True, True),
     ]
 
