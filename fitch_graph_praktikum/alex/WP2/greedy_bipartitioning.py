@@ -1,82 +1,112 @@
 import random
-import numpy
-from fitch_graph_praktikum.alex.WP2.full_weighted_relations import generate_full_weighted_relations
-from fitch_graph_praktikum.util.lib import partition_heuristic_scaffold
+import copy
+from typing import Callable
+
 import networkx as nx
 
 
-def greedy_bipartition(graph: nx.Graph):
+def _return_neighbours_new_part(graph: nx.Graph, node_list) -> "set":
+    neighbours = set()
+    for n in node_list[1]:
+        neighbours.update({neighbour for neighbour in list(graph.neighbors(n)) if neighbour not in node_list[1]})
+    return neighbours
+
+
+def _best_greedy_move(
+        graph: nx.Graph,
+        nodelist: list,
+        edges: dict[tuple, float],
+        score_func: Callable[[list, list, dict[tuple[int, int], float]], float],
+        reference_score: float = None):
+    """to bipartition the graphs nodes, we check first, whether the selected node lies in the neighbourhood of
+    nodelist[1]. This is logically correct to avoid partitions into more than two communities. Also, it would never
+    appear for nodelist[0] to contain no neighbors of nodelist[1] - since this would mean, all nodes would have been
+    moved to nodelist[1] - which would worsen the score to zero again"""
+    neighbours = _return_neighbours_new_part(graph=graph, node_list=nodelist)
+    nodes_updated = False
+
+    for n0 in neighbours:
+        greedy_test = copy.deepcopy(nodelist)
+        greedy_test[1].append(n0)
+        greedy_test[0].remove(n0)
+        greedy_test_score = score_func(greedy_test[0], greedy_test[1], edges)
+
+        if reference_score is None:
+            # update reference score.
+            reference_score = greedy_test_score - 1
+        if greedy_test_score > reference_score:
+            # update reference score.
+            reference_score = greedy_test_score
+            nodes_updated = greedy_test
+
+    if nodes_updated is not False:
+        return nodes_updated
+    else:
+        return False
+
+
+def _adjust_greedy(
+        graph: nx.Graph,
+        nodelist: list,
+        edges: dict[tuple, float],
+        score_func: Callable[[list, list, dict[tuple[int, int], float]], float],
+        reference_score: float):
+    """re-partitions one node from nodelist[1] back to nodelist[0] except for the last node
+    and based on  this reperforms the best greedy move"""
+
+    greedy_adjusted = False
+
+    index_last_node_to_move = len(nodelist[1]) - 1
+    # probiere alle elemente bis auf das letzte aus:
+    for i in range(index_last_node_to_move):
+        nodes_to_rollback = copy.deepcopy(nodelist)
+        node_to_move = nodes_to_rollback[1][i]
+        nodes_to_rollback[0].append(node_to_move)
+        nodes_to_rollback[1].remove(node_to_move)
+
+        nodes_adjusted = _best_greedy_move(
+            graph=graph, nodelist=nodes_to_rollback, edges=edges, score_func=score_func, reference_score=reference_score
+        )
+        if nodes_adjusted is not False:
+            score_adjusted = score_func(nodes_adjusted[0], nodes_adjusted[1], edges)
+            reference_score = score_adjusted
+            greedy_adjusted = nodes_adjusted
+
+    return greedy_adjusted
+
+
+###################################################################################################################
+
+
+def greedy_bi_partition(graph: nx.Graph, score_func: Callable[[list, list, dict[tuple[int, int], float]], float]):
+
     nodes = [list(graph.nodes), []]
-    uncut_edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
-    edges_cut = dict()
+    edges = {(n1, n2): v['weight'] for n1, n2, v in graph.edges(data=True)}
+    edges.update({(n2, n1): v['weight'] for n1, n2, v in graph.edges(data=True)})
 
-    score_new = 0
+    starter = random.choice(nodes[0])
+    nodes[0].remove(starter)
+    nodes[1].append(starter)
 
-    cut = max(uncut_edges.keys(), key=uncut_edges.get)
-    edges_cut.update(uncut_edges.pop(cut))
-    print(nodes)
-    nodes[1].append(nodes[0].pop(cut[0]))
-    print(nodes)
-    score_new = uncut_edges[cut]
-    print("_initial cut_edge: ", cut, " score_new = ", score_new)
+    score = score_func(nodes[0], nodes[1], edges)
 
-    neighbours = set(graph.neighbors(cut[0]))
-    neighbours.remove(cut[1])
+    score_old = score - 1
+    while score > score_old:
+        score_old = score
 
-    for n in neighbours:
-        neighbor_cut = [cut[0]][n]
-        score_new = score_new + graph[neighbor_cut]['weight']
-        edges_cut.update(uncut_edges.pop(neighbor_cut))
+        nodes_updated = _best_greedy_move(
+            graph=graph, nodelist=nodes, edges=edges, score_func=score_func, reference_score=score_old
+        )
+        if nodes_updated is False:
+            nodes_updated = _adjust_greedy(
+                graph=graph, nodelist=nodes, edges=edges, score_func=score_func, reference_score=score_old
+            )
 
-    print("_initial cut_edge: ", cut, " score_new = ", score_new)
+        if nodes_updated is False:
+            continue
 
-    score_old = score_new - 1
-    while score_new > score_old:
-        nodes_backup = nodes
-        score_old = score_new
+        else:
+            nodes = nodes_updated
+            score = score_func(nodes[0], nodes[1], edges)
 
-        cut = None
-        neighbours = set()
-        for n in nodes[1]:
-            neighbours.update({neighbour for neighbour in list(graph.neighbors(n))})
-
-        for ue in uncut_edges:
-            if ue[1] not in nodes[1] and ue[0] not in nodes[1]:
-                if ue[0] in neighbours or ue[1] in neighbours:
-                    if cut is None or uncut_edges[cut] > uncut_edges[ue]:
-                        cut = ue
-                        print("potential cut: ", cut)
-
-        neighbours = set(graph.neighbors(cut[0]))
-        for n in nodes[1]:
-            neighbours.remove(n)
-        for n in neighbours:
-            neighbor_cut = [cut[0]][n]
-            score_ = score_new + graph[neighbor_cut]['weight']
-            edges_cut.update(uncut_edges.pop(neighbor_cut))
-
-
-            max(uncut_edges.keys(), key=uncut_edges.get)
-
-    return
-
-
-# test = partition_heuristic_scaffold({}, {}, {}, [], partition_function=0, scoring_function=0)
-
-
-if __name__ == '__main__':
-    # print(numpy.random.normal)
-    # test_relations = {0: [(1, 2), (2, 1)], 1: [(0, 1), (1, 0)], 'd': [(0, 2)]}
-    # test_weights_sym = generate_full_weighted_relations(3, test_relations, numpy.random.normal, [3, 0.75],
-    #                                                     numpy.random.normal, [1, 0.5], symmetric=True)
-    # test_weights_asym = generate_weighted_relations(test_relations, numpy.random.normal, [3, 0.75], symmetric=False)
-    # print(test_weights_sym)
-    # for k, v in test_weights_sym.items():
-    #     print(f"{k}: {v}")
-    #
-    # test = partition_heuristic_scaffold({}, {}, {}, [], partition_function=0, scoring_function=0)
-
-    edges = [(0, 1, 2.0), (2, 0, 3.0), (1, 2, 0.5), (0, 3, 0.9), (1, 3, 1.5), (2, 3, 2.0)]
-    G = nx.Graph()
-    G.add_weighted_edges_from(edges)
-    print(greedy_bipartition(G))
+    return nodes

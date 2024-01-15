@@ -31,3 +31,6 @@ The supplemental data is required to be located within
   run the benchmarking for a given DataFrame
 
 ### WP2
+
+- `generate_full_weighted_relations` in [fitch_graph_praktikum.alex.WP2.full_weighted_relations](fitch_graph_praktikum/alex/WP2/full_weighted_relations.py):
+  generate full sets of weights for a relation dictionary

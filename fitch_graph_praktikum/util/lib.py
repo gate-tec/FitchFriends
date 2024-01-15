@@ -303,15 +303,27 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
             if i == j:
                 continue
             if median:
-                if bi_weighted[(nodes[i], nodes[j])] <= bi_med:
-                    # graph_bi.add_edge(nodes[i], nodes[j], weight=1.0)
-                    graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
-                if empty_weighted[(nodes[i], nodes[j])] <= empty_med:
-                    graph_empty.add_edge(nodes[i], nodes[j],
-                                           weight=empty_weighted[(nodes[i], nodes[j])])
-                if (uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2 <= uni_med:
-                    graph_uni.add_edge(nodes[i], nodes[j],
-                                         weight=(uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2)
+                if reciprocal:
+                    if bi_weighted[(nodes[i], nodes[j])] >= bi_med:
+                        # graph_bi.add_edge(nodes[i], nodes[j], weight=1.0)
+                        graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
+                    if empty_weighted[(nodes[i], nodes[j])] >= empty_med:
+                        graph_empty.add_edge(nodes[i], nodes[j],
+                                             weight=empty_weighted[(nodes[i], nodes[j])])
+                    if (uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])]) / 2 >= uni_med:
+                        graph_uni.add_edge(nodes[i], nodes[j],
+                                           weight=(uni_weighted[(nodes[i], nodes[j])] + uni_weighted[
+                                               (nodes[j], nodes[i])]) / 2)
+                else:
+                    if bi_weighted[(nodes[i], nodes[j])] <= bi_med:
+                        # graph_bi.add_edge(nodes[i], nodes[j], weight=1.0)
+                        graph_bi.add_edge(nodes[i], nodes[j], weight=bi_weighted[(nodes[i], nodes[j])])
+                    if empty_weighted[(nodes[i], nodes[j])] <= empty_med:
+                        graph_empty.add_edge(nodes[i], nodes[j],
+                                               weight=empty_weighted[(nodes[i], nodes[j])])
+                    if (uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2 <= uni_med:
+                        graph_uni.add_edge(nodes[i], nodes[j],
+                                             weight=(uni_weighted[(nodes[i], nodes[j])] + uni_weighted[(nodes[j], nodes[i])])/2)
             else:
                 if reciprocal:
                     graph_bi.add_edge(nodes[i], nodes[j], weight=1/bi_weighted[(nodes[i], nodes[j])])
