@@ -13,24 +13,42 @@ The supplemental data is required to be located within
 ### General
 
 - `load_dataframe` in [fitch_graph_praktikum.nicolas.graph_io](fitch_graph_praktikum/nicolas/graph_io.py):
+
   load a `.tsv` file as a pandas DataFrame
 - `save_dataframe` in [fitch_graph_praktikum.nicolas.graph_io](fitch_graph_praktikum/nicolas/graph_io.py):
+
   save a pandas DataFrame to a `.tsv` file
 - `load_relations` in [fitch_graph_praktikum.nicolas.graph_io](fitch_graph_praktikum/nicolas/graph_io.py):
+
   load relations from stored data
 
 ### WP1
 
 - `get_reduced_relations` in [fitch_graph_praktikum.nicolas.functions_partial_tuple](fitch_graph_praktikum/nicolas/functions_partial_tuple.py):
+
   get all (possible) relations with specified information loss (with or without clearing `E_d`)
 - `get_random_cograph_relations` in [fitch_graph_praktikum.nicolas.generator](fitch_graph_praktikum/nicolas/generator.py):
+
   get all (possible) relations with specified information loss for a random (Fitch) graph
 - pipeline functions in [fitch_graph_praktikum.nicolas.benchmark_WP1.benchmarking](fitch_graph_praktikum/nicolas/benchmark_WP1/benchmarking.py):
+
   singular pipeline functions for each algorithm (variant)
 - `benchmark_algorithms_on_all_samples` in [fitch_graph_praktikum.alex.WP1.benchmarking](fitch_graph_praktikum/alex/WP1/benchmarking.py):
+
   run the benchmarking for a given DataFrame
 
 ### WP2
 
 - `generate_full_weighted_relations` in [fitch_graph_praktikum.alex.WP2.full_weighted_relations](fitch_graph_praktikum/alex/WP2/full_weighted_relations.py):
+
   generate full sets of weights for a relation dictionary
+- partitioning functions in [fitch_graph_praktikum.nicolas.framework_WP2.framework_functions](fitch_graph_praktikum/nicolas/framework_WP2/framework_functions.py):
+
+  different bi-partitioning functions compatible with the `partition_heuristic_scaffold`
+
+### Data Analysis
+
+- `get_metrics_only` in [fitch_graph_praktikum.analysis.WP1.wrangler](fitch_graph_praktikum/analysis/WP1/wrangler.py)
+  and [fitch_graph_praktikum.analysis.WP2.wrangler](fitch_graph_praktikum/analysis/WP2/wrangler.py):
+
+  load the respective pure metrics from the respective dataframe
