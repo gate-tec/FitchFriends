@@ -33,8 +33,13 @@ def _serialize_weights(weights: dict[tuple[int, int], float]) -> "str":
     return json.dumps([{'k': k, 'v': v} for k, v in weights.items()])
 
 
+def _deserialize_weights(weight_str: str) -> "dict[tuple[int, int], float]":
+    return {tuple(entry['k']): entry['v'] for entry in json.loads(weight_str)}
+
+
 def benchmark_algos_on_graph(
-        sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP
+        sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP,
+        input_full_weight_relations: list[str] = None
 ) -> "tuple[Any, Any]":
 
     # generate random weights
@@ -42,7 +47,11 @@ def benchmark_algos_on_graph(
         number_of_nodes=number_of_nodes, relations=relations,
         distribution_TP=np.random.normal, parameters_TP=[mu_TP, 0.1],
         distribution_FP=np.random.normal, parameters_FP=[mu_FP, 0.1]
-    )
+    ) if input_full_weight_relations is None else {
+        0: _deserialize_weights(input_full_weight_relations[0]),
+        1: _deserialize_weights(input_full_weight_relations[1]),
+        'd': _deserialize_weights(input_full_weight_relations[2])
+    }
 
     # record base
     weight_record = {
@@ -82,13 +91,12 @@ def benchmark_algos_on_graph(
     ]
 
     for name, part_func, score_func, median, reciprocal in functions:
-        current_full_weight_relations = copy.copy(full_weight_relations)
         t1 = time.perf_counter()
         predicted_relations: RelationDictionary = partition_heuristic_scaffold(
-            uni_weighted=current_full_weight_relations['d'],
-            bi_weighted=current_full_weight_relations[1],
-            empty_weighted=current_full_weight_relations[0],
-            relations=None,
+            uni_weighted=full_weight_relations['d'],
+            bi_weighted=full_weight_relations[1],
+            empty_weighted=full_weight_relations[0],
+            relations={0: [], 1: [], "d": []},
             nodes=[x for x in range(number_of_nodes)],
             partition_function=part_func,
             scoring_function=score_func,
@@ -100,9 +108,9 @@ def benchmark_algos_on_graph(
         record.update(**{
             f"{name}_Sym_Diff": round(difference, 3),
             f"{name}_Duration_(sek)": round(t2 - t1, 5),
-            f"{name}_Results_Rel_0": json.dumps(predicted_relations[0]),
-            f"{name}_Results_Rel_1": json.dumps(predicted_relations[1]),
-            f"{name}_Results_Rel_d": json.dumps(predicted_relations['d'])
+            f"{name}_Results_Rel_0": json.dumps(list(sorted(set(predicted_relations[0])))),
+            f"{name}_Results_Rel_1": json.dumps(list(sorted(set(predicted_relations[1])))),
+            f"{name}_Results_Rel_d": json.dumps(list(sorted(set(predicted_relations['d']))))
         })
 
     return weight_record, record
@@ -130,7 +138,8 @@ def benchmark_all_stored_graphs(mu_TP: float, mu_FP: float, safety_steps: int = 
                 instance[0],
                 load_relations(instance[0], instance[1], instance[2]),
                 mu_TP,
-                mu_FP
+                mu_FP,
+                None
             ): i for i, instance in enumerate(instances)}
 
             for future in work_load:
