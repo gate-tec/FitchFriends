@@ -275,7 +275,7 @@ def partition_heuristic_scaffold(uni_weighted: dict, bi_weighted: dict, empty_we
                                  partition_function, scoring_function, relations=None, uni=True, bi=True, median=False, reciprocal=False):
 
     # Initialize relations - here we collect the relations at each recursive step
-    if relations == None:
+    if relations is None:
         relations = {0: [], 1: [], "d": []}
 
     # Recursion abort condition
