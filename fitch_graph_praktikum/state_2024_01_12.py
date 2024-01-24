@@ -4,8 +4,8 @@ from fitch_graph_praktikum.nicolas.benchmark_WP2.benchmarking import benchmark_a
 
 tuples = [
     (0.7, 0.3),
-    # (0.7, 0.4),
-    # (0.7, 0.5)
+    (0.7, 0.4),
+    (0.7, 0.5)
 ]
 
 for i, (mu_TP, mu_FP) in enumerate(tuples):
