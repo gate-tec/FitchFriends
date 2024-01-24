@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import time
@@ -81,11 +82,12 @@ def benchmark_algos_on_graph(
     ]
 
     for name, part_func, score_func, median, reciprocal in functions:
+        current_full_weight_relations = copy.copy(full_weight_relations)
         t1 = time.perf_counter()
         predicted_relations: RelationDictionary = partition_heuristic_scaffold(
-            uni_weighted=full_weight_relations['d'],
-            bi_weighted=full_weight_relations[1],
-            empty_weighted=full_weight_relations[0],
+            uni_weighted=current_full_weight_relations['d'],
+            bi_weighted=current_full_weight_relations[1],
+            empty_weighted=current_full_weight_relations[0],
             relations=None,
             nodes=[x for x in range(number_of_nodes)],
             partition_function=part_func,
