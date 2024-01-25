@@ -36,11 +36,17 @@ def bi_partition_random(graph: nx.Graph) -> "list[list]":
 
 
 def bi_partition_greedy_avg(graph: nx.Graph) -> "list[list]":
-    return greedy_bi_partition(graph=graph, score_func=average_weight_scoring)
+    partition = greedy_bi_partition(graph=graph.copy(), score_func=average_weight_scoring)
+    if len(partition[0]) == 0 or len(partition[1]) == 0:
+        return bi_partition_random(graph=graph)
+    return partition
 
 
 def bi_partition_greedy_sum(graph: nx.Graph) -> "list[list]":
-    return greedy_bi_partition(graph=graph, score_func=sum_weight_scoring)
+    partition = greedy_bi_partition(graph=graph.copy(), score_func=sum_weight_scoring)
+    if len(partition[0]) == 0 or len(partition[1]) == 0:
+        return bi_partition_random(graph=graph)
+    return partition
 
 
 #########################
@@ -49,19 +55,19 @@ def bi_partition_greedy_sum(graph: nx.Graph) -> "list[list]":
 
 
 def bi_partition_louvain_average_edge_cut(graph: nx.Graph) -> "list[list]":
-    k_partition = partition_louvain(graph=graph, mod_func=average_weight_per_edge_cut2)
+    k_partition = partition_louvain(graph=graph.copy(), mod_func=average_weight_per_edge_cut2)
 
     return convert_to_bi_partition(graph=graph, k_partition=k_partition, mod_func=average_weight_scoring)
 
 
 def bi_partition_louvain_average_edge_cut_mod(graph: nx.Graph) -> "list[list]":
-    k_partition = partition_louvain(graph=graph, mod_func=average_weight_per_edge_cut)
+    k_partition = partition_louvain(graph=graph.copy(), mod_func=average_weight_per_edge_cut)
 
     return convert_to_bi_partition(graph=graph, k_partition=k_partition, mod_func=average_weight_scoring)
 
 
 def bi_partition_louvain_sum_edge_cut(graph: nx.Graph) -> "list[list]":
-    k_partition = partition_louvain(graph=graph, mod_func=sum_weight_per_edge_cut)
+    k_partition = partition_louvain(graph=graph.copy(), mod_func=sum_weight_per_edge_cut)
 
     return convert_to_bi_partition(graph=graph, k_partition=k_partition, mod_func=sum_weight_scoring)
 
@@ -73,7 +79,7 @@ def bi_partition_louvain_sum_edge_cut(graph: nx.Graph) -> "list[list]":
 def bi_partition_leiden_average_edge_cut_gamma1_theta1(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0, theta=1.0,
             mod_func=average_weight_per_edge_cut2
         )
@@ -86,7 +92,7 @@ def bi_partition_leiden_average_edge_cut_gamma1_theta1(graph: nx.Graph) -> "list
 def bi_partition_leiden_average_edge_cut_gamma1_7_theta001(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0 / 7.0, theta=0.01,
             mod_func=average_weight_per_edge_cut2
         )
@@ -99,7 +105,7 @@ def bi_partition_leiden_average_edge_cut_gamma1_7_theta001(graph: nx.Graph) -> "
 def bi_partition_leiden_average_edge_cut_mod_gamma1_theta1(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0, theta=1.0,
             mod_func=average_weight_per_edge_cut
         )
@@ -112,7 +118,7 @@ def bi_partition_leiden_average_edge_cut_mod_gamma1_theta1(graph: nx.Graph) -> "
 def bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0 / 7.0, theta=0.01,
             mod_func=average_weight_per_edge_cut
         )
@@ -125,7 +131,7 @@ def bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001(graph: nx.Graph) 
 def bi_partition_leiden_sum_edge_cut_gamma1_theta1(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0, theta=1.0,
             mod_func=sum_weight_per_edge_cut
         )
@@ -138,7 +144,7 @@ def bi_partition_leiden_sum_edge_cut_gamma1_theta1(graph: nx.Graph) -> "list[lis
 def bi_partition_leiden_sum_edge_cut_gamma1_7_theta001(graph: nx.Graph) -> "list[list]":
     try:
         k_partition = partition_leiden(
-            graph=graph,
+            graph=graph.copy(),
             val_gamma=1.0 / 7.0, theta=0.01,
             mod_func=sum_weight_per_edge_cut
         )
