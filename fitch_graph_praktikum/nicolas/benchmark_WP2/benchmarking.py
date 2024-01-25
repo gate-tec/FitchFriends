@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import time
@@ -32,8 +33,13 @@ def _serialize_weights(weights: dict[tuple[int, int], float]) -> "str":
     return json.dumps([{'k': k, 'v': v} for k, v in weights.items()])
 
 
+def _deserialize_weights(weight_str: str) -> "dict[tuple[int, int], float]":
+    return {tuple(entry['k']): entry['v'] for entry in json.loads(weight_str)}
+
+
 def benchmark_algos_on_graph(
-        sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP
+        sampleID, number_of_nodes: int, relations: RelationDictionary, mu_TP, mu_FP,
+        input_full_weight_relations: list[str] = None
 ) -> "tuple[Any, Any]":
 
     # generate random weights
@@ -41,7 +47,11 @@ def benchmark_algos_on_graph(
         number_of_nodes=number_of_nodes, relations=relations,
         distribution_TP=np.random.normal, parameters_TP=[mu_TP, 0.1],
         distribution_FP=np.random.normal, parameters_FP=[mu_FP, 0.1]
-    )
+    ) if input_full_weight_relations is None else {
+        0: _deserialize_weights(input_full_weight_relations[0]),
+        1: _deserialize_weights(input_full_weight_relations[1]),
+        'd': _deserialize_weights(input_full_weight_relations[2])
+    }
 
     # record base
     weight_record = {
@@ -60,47 +70,53 @@ def benchmark_algos_on_graph(
         ('GreedySum', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg', bi_partition_louvain_average_edge_cut, average_weight_scoring, False, False),
         ('LouvainAvgMod', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, False, False),
-        ('LouvainSum', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, False, False),
+        # ('LouvainSum', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, False, False),
         ('LeidenAvg_1_1', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, False, False),
         ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, False, False),
-        ('LeidenSum_1_1', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, False, False),
+        # ('LeidenSum_1_1', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, False, False),
         ('LeidenAvg_1_7_001', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, False, False),
         ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, False, False),
-        ('LeidenSum_1_7_001', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, False, False),
+        # ('LeidenSum_1_7_001', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, False, False),
         ('GreedyAvg_med', bi_partition_greedy_avg, average_weight_scoring, False, False),
         ('GreedySum_med', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg_med', bi_partition_louvain_average_edge_cut, average_weight_scoring, True, True),
         ('LouvainAvgMod_med', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, True, True),
-        ('LouvainSum_med', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, True, True),
+        # ('LouvainSum_med', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, True, True),
         ('LeidenAvg_1_1_med', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, True, True),
         ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, True, True),
-        ('LeidenSum_1_1_med', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, True, True),
+        # ('LeidenSum_1_1_med', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, True, True),
         ('LeidenAvg_1_7_001_med', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, True, True),
         ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, True, True),
-        ('LeidenSum_1_7_001_med', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, True, True),
+        # ('LeidenSum_1_7_001_med', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, True, True),
     ]
 
     for name, part_func, score_func, median, reciprocal in functions:
+        input_data = copy.deepcopy({0: [], 1: [], "d": []})
         t1 = time.perf_counter()
         predicted_relations: RelationDictionary = partition_heuristic_scaffold(
             uni_weighted=full_weight_relations['d'],
             bi_weighted=full_weight_relations[1],
             empty_weighted=full_weight_relations[0],
-            relations=None,
+            relations=input_data,
             nodes=[x for x in range(number_of_nodes)],
             partition_function=part_func,
             scoring_function=score_func,
         )
         t2 = time.perf_counter()
 
+        if len(set(predicted_relations[0]).intersection(predicted_relations[1])) > 0 or \
+                len(set(predicted_relations[0]).intersection(predicted_relations['d'])) > 0 or \
+                len(set(predicted_relations[1]).intersection(predicted_relations['d'])) > 0:
+            raise ValueError(f'Critical 1 - {sampleID}: {name}')
+
         difference = sym_diff(relations, predicted_relations, n=number_of_nodes)
 
         record.update(**{
             f"{name}_Sym_Diff": round(difference, 3),
             f"{name}_Duration_(sek)": round(t2 - t1, 5),
-            f"{name}_Results_Rel_0": json.dumps(predicted_relations[0]),
-            f"{name}_Results_Rel_1": json.dumps(predicted_relations[1]),
-            f"{name}_Results_Rel_d": json.dumps(predicted_relations['d'])
+            f"{name}_Results_Rel_0": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations[0]))))),
+            f"{name}_Results_Rel_1": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations[1]))))),
+            f"{name}_Results_Rel_d": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations['d'])))))
         })
 
     return weight_record, record
@@ -128,7 +144,8 @@ def benchmark_all_stored_graphs(mu_TP: float, mu_FP: float, safety_steps: int = 
                 instance[0],
                 load_relations(instance[0], instance[1], instance[2]),
                 mu_TP,
-                mu_FP
+                mu_FP,
+                None
             ): i for i, instance in enumerate(instances)}
 
             for future in work_load:
