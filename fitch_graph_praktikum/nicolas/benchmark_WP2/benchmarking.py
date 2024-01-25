@@ -70,47 +70,53 @@ def benchmark_algos_on_graph(
         ('GreedySum', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg', bi_partition_louvain_average_edge_cut, average_weight_scoring, False, False),
         ('LouvainAvgMod', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, False, False),
-        ('LouvainSum', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, False, False),
+        # ('LouvainSum', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, False, False),
         ('LeidenAvg_1_1', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, False, False),
         ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, False, False),
-        ('LeidenSum_1_1', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, False, False),
+        # ('LeidenSum_1_1', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, False, False),
         ('LeidenAvg_1_7_001', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, False, False),
         ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, False, False),
-        ('LeidenSum_1_7_001', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, False, False),
+        # ('LeidenSum_1_7_001', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, False, False),
         ('GreedyAvg_med', bi_partition_greedy_avg, average_weight_scoring, False, False),
         ('GreedySum_med', bi_partition_greedy_sum, average_weight_scoring, False, False),
         ('LouvainAvg_med', bi_partition_louvain_average_edge_cut, average_weight_scoring, True, True),
         ('LouvainAvgMod_med', bi_partition_louvain_average_edge_cut_mod, average_weight_scoring, True, True),
-        ('LouvainSum_med', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, True, True),
+        # ('LouvainSum_med', bi_partition_louvain_sum_edge_cut, sum_weight_scoring, True, True),
         ('LeidenAvg_1_1_med', bi_partition_leiden_average_edge_cut_gamma1_theta1, average_weight_scoring, True, True),
         ('LeidenAvgMod_1_1', bi_partition_leiden_average_edge_cut_mod_gamma1_theta1, average_weight_scoring, True, True),
-        ('LeidenSum_1_1_med', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, True, True),
+        # ('LeidenSum_1_1_med', bi_partition_leiden_sum_edge_cut_gamma1_theta1, sum_weight_scoring, True, True),
         ('LeidenAvg_1_7_001_med', bi_partition_leiden_average_edge_cut_gamma1_7_theta001, average_weight_scoring, True, True),
         ('LeidenAvgMod_1_7_001', bi_partition_leiden_average_edge_cut_mod_gamma1_7_theta001, average_weight_scoring, True, True),
-        ('LeidenSum_1_7_001_med', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, True, True),
+        # ('LeidenSum_1_7_001_med', bi_partition_leiden_sum_edge_cut_gamma1_7_theta001, sum_weight_scoring, True, True),
     ]
 
     for name, part_func, score_func, median, reciprocal in functions:
+        input_data = copy.deepcopy({0: [], 1: [], "d": []})
         t1 = time.perf_counter()
         predicted_relations: RelationDictionary = partition_heuristic_scaffold(
             uni_weighted=full_weight_relations['d'],
             bi_weighted=full_weight_relations[1],
             empty_weighted=full_weight_relations[0],
-            relations={0: [], 1: [], "d": []},
+            relations=input_data,
             nodes=[x for x in range(number_of_nodes)],
             partition_function=part_func,
             scoring_function=score_func,
         )
         t2 = time.perf_counter()
 
+        if len(set(predicted_relations[0]).intersection(predicted_relations[1])) > 0 or \
+                len(set(predicted_relations[0]).intersection(predicted_relations['d'])) > 0 or \
+                len(set(predicted_relations[1]).intersection(predicted_relations['d'])) > 0:
+            raise ValueError(f'Critical 1 - {sampleID}: {name}')
+
         difference = sym_diff(relations, predicted_relations, n=number_of_nodes)
 
         record.update(**{
             f"{name}_Sym_Diff": round(difference, 3),
             f"{name}_Duration_(sek)": round(t2 - t1, 5),
-            f"{name}_Results_Rel_0": json.dumps(list(sorted(set(predicted_relations[0])))),
-            f"{name}_Results_Rel_1": json.dumps(list(sorted(set(predicted_relations[1])))),
-            f"{name}_Results_Rel_d": json.dumps(list(sorted(set(predicted_relations['d']))))
+            f"{name}_Results_Rel_0": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations[0]))))),
+            f"{name}_Results_Rel_1": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations[1]))))),
+            f"{name}_Results_Rel_d": json.dumps(copy.deepcopy(list(sorted(set(predicted_relations['d'])))))
         })
 
     return weight_record, record
