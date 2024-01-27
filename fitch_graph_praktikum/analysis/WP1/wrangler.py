@@ -1,10 +1,10 @@
 import pandas as pd
 import json
 
-from fitch_graph_praktikum.nicolas.graph_io import load_dataframe
+from fitch_graph_praktikum.nicolas.graph_io import load_dataframe, save_dataframe
 
 
-def get_metrics_only(filename: str):
+def get_metrics_only(filename: str, excel_format: bool = False):
     base_frame = load_dataframe(filename=filename)
 
     col_names = [
@@ -27,22 +27,22 @@ def get_metrics_only(filename: str):
             base_frame.ID.apply(lambda x: json.loads(x)).tolist(),
             index=base_frame.index, columns=id_columns
         ).loc[:, sub_id_columns],
-        base_frame.loc[:, ['Loss'] + col_names]
+        base_frame.loc[:, ['Loss'] + col_names].map(
+            lambda x: str(x).replace('.', ',')
+        ) if excel_format else base_frame.loc[:, ['Loss'] + col_names]
     ], axis=1)
 
     return filtered_frame, group_columns
 
 
 if __name__ == "__main__":
-    filtered_frame, group_columns = get_metrics_only('bm_original_fitch_samples_nicolas.tsv')
-    # filtered_frame, group_columns = get_metrics_only('bm_original_fitch_samples_no_direct_nicolas.tsv')
-    # filtered_frame, group_columns = get_metrics_only('bm_random_fitch_samples_nicolas.tsv')
-    # filtered_frame, group_columns = get_metrics_only('bm_random_fitch_samples_no_direct_nicolas.tsv')
+    files = [
+        'bm_original_fitch_samples_nicolas.tsv',
+        'bm_original_fitch_samples_no_direct_nicolas.tsv',
+        'bm_random_fitch_samples_nicolas.tsv',
+        'bm_random_fitch_samples_no_direct_nicolas.tsv'
+    ]
 
-    mean_frame = filtered_frame\
-        .groupby(by=group_columns)\
-        .filter(lambda x: len(x) > 50)\
-        .groupby(by=group_columns)\
-        .mean()
-
-    print(mean_frame.to_string())
+    for file in files:
+        filtered_frame, _ = get_metrics_only(file, True)
+        save_dataframe(filename=f"excel_{file}", frame=filtered_frame)
